@@ -1,5 +1,5 @@
-class MarkovStateVector:
-    """Create a MarkovStateVector object defining the available state space
+class MarkovStateSpace:
+    """Create a MarkovStateSpace object defining the available state space
 
     Keyword arguments:
         state_list -- list of MarkovState objects defining the state space
@@ -11,4 +11,4 @@ class MarkovStateVector:
         self.time_step = time_step
 
     def __repr__(self):
-        return 'MarkovStateVector(state_id={}, time_step={})'.format(self.state_list, self.time_step)
+        return 'MarkovStateSpace(state_id={}, time_step={})'.format(self.state_list, self.time_step)
