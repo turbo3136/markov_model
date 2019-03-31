@@ -19,25 +19,29 @@ class TransitionMatrix:
 
         # now that we have a matrix of states, we want to create a matrix of tuple ids representing the transitions
         self.state_id_tuple_matrix = [[(i.state_id, j.state_id) for j in self.state_array] for i in self.state_array]
-        self.transition_function_matrix = [
+        self.transition_function_matrix = np.matrix([  # creates a numpy matrix of transition functions
             [
                 tf for tf in self.transition_function_list for tup in row if tup == tf.state_id_tuple
             ] for row in self.state_id_tuple_matrix
-        ]
+        ])
 
     def __repr__(self):
         return 'TransitionMatrix(state_space={}, transition_function_list={})'.format(
             self.state_space, self.transition_function_list
         )
 
+    @staticmethod
+    def transition_function_value_at_time_step(transition_function, time_step):
+        """just grab the value for the transition function at a certain time step"""
+        return transition_function.value_at_time_step(time_step=time_step)
+
     def matrix_at_time_step(self, time_step):
-        """"returns numpy matrix"""
-        return np.matrix(list(
-            map(
-                lambda x: list(map(lambda y: y.value_at_time_step(time_step=time_step), x)),  # function we're mapping
-                self.transition_function_matrix  # matrix we're mapping over. Notice the nested maps
-            )
-        ))
+        """vectorize the value at time step function and apply it to the transition_function_matrix
+
+        returns numpy matrix
+        """
+        vectorized_func = np.vectorize(self.transition_function_value_at_time_step)
+        return vectorized_func(self.transition_function_matrix, time_step)
 
 
 if __name__ == '__main__':
