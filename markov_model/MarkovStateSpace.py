@@ -12,6 +12,7 @@ class MarkovStateSpace:
         if type(state_array) != np.ndarray:
             raise ValueError('MarkovStateSpace.state_array expects a numpy ndarray object')
         self.state_array = state_array
+        self.size = len(self.state_array)
 
     def __repr__(self):
         return 'MarkovStateSpace(state_array={})'.format(self.state_array)
