@@ -21,9 +21,7 @@ class TransitionMatrix:
         self.state_id_tuple_matrix = [[(i.state_id, j.state_id) for j in self.state_array] for i in self.state_array]
         self.transition_function_matrix = [
             [
-                [
-                    tf for tf in self.transition_function_list if tup == tf.state_id_tuple
-                ] for tup in row
+                tf for tf in self.transition_function_list for tup in row if tup == tf.state_id_tuple
             ] for row in self.state_id_tuple_matrix
         ]
 
@@ -31,6 +29,15 @@ class TransitionMatrix:
         return 'TransitionMatrix(state_space={}, transition_function_list={})'.format(
             self.state_space, self.transition_function_list
         )
+
+    def matrix_at_time_step(self, time_step):
+        """"returns numpy matrix"""
+        return np.matrix(list(
+            map(
+                lambda x: list(map(lambda y: y.value_at_time_step(time_step=time_step), x)),  # function we're mapping
+                self.transition_function_matrix  # matrix we're mapping over. Notice the nested maps
+            )
+        ))
 
 
 if __name__ == '__main__':
@@ -58,3 +65,5 @@ if __name__ == '__main__':
 
     print(tm.state_id_tuple_matrix)
     print(tm.transition_function_matrix)
+    # print(np.matrix(tm.transition_function_matrix))
+    print(tm.matrix_at_time_step(time_step=2))
