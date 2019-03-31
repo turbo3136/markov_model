@@ -1,12 +1,17 @@
+import numpy as np
+
+
 class MarkovStateSpace:
     """Create a MarkovStateSpace object defining the available state space
 
     Keyword arguments:
-        state_list -- list of MarkovState objects defining the state space
+        state_array -- numpy array of MarkovState objects defining the state space
     """
 
-    def __init__(self, state_list):
-        self.state_list = state_list
+    def __init__(self, state_array):
+        if type(state_array) != np.ndarray:
+            raise ValueError('MarkovStateSpace.state_array expects a numpy ndarray object')
+        self.state_array = state_array
 
     def __repr__(self):
-        return 'MarkovStateSpace(state_id={})'.format(self.state_list)
+        return 'MarkovStateSpace(state_array={})'.format(self.state_array)

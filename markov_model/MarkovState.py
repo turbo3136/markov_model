@@ -20,5 +20,5 @@ class MarkovState:
 
 
 if __name__ == '__main__':
-    s1 = MarkovState(state_id='test_id1', time_step=0)
+    s1 = MarkovState(state_id='test_id1')
     print(s1.state_name)
