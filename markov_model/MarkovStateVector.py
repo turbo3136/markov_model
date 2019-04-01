@@ -22,3 +22,8 @@ class MarkovStateVector:
             raise ValueError(
                 'MarkovStateVector.state_distribution must be the same length as state_space array'
             )
+
+    def __repr__(self):
+        return 'MarkovStateVector(state_space={}, state_distribution={}, time_step={})'.format(
+            self.state_space, self.state_distribution, self.time_step
+        )
