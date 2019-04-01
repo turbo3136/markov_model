@@ -20,7 +20,7 @@ class MarkovStateVector:
 
         if self.state_space.size != len(self.state_distribution):
             raise ValueError(
-                'MarkovStateVector.state_distribution must be the same length as state_space array'
+                'MarkovStateVector.state_distribution must be the same size as state_space array'
             )
 
     def __repr__(self):
