@@ -1,5 +1,5 @@
-class TransitionFunction:
-    """Create a TransitionFunction object defining the probability of transitioning between two MarkovStates
+class MarkovTransitionFunction:
+    """Create a MarkovTransitionFunction object defining the probability of transitioning between two MarkovStates
 
     Keyword arguments:
         state_id_tuple -- unique identifier, tuple containing the id of the initial state and the end state
@@ -12,7 +12,7 @@ class TransitionFunction:
         self.transition_function = transition_function
 
     def __repr__(self):
-        return 'TransitionFunction(state_id_tuple={})'.format(self.state_id_tuple)
+        return 'MarkovTransitionFunction(state_id_tuple={})'.format(self.state_id_tuple)
 
     def value_at_time_step(self, time_step):
         return self.transition_function(time_step)
@@ -25,5 +25,5 @@ if __name__ == '__main__':
         else:
             return 1
 
-    tf = TransitionFunction(state_id_tuple=('hello', 'world'), transition_function=one_over_t)
+    tf = MarkovTransitionFunction(state_id_tuple=('hello', 'world'), transition_function=one_over_t)
     print(tf.value_at_time_step(time_step=4))

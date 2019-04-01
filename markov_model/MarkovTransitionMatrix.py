@@ -1,12 +1,13 @@
 import numpy as np
 
 
-class TransitionMatrix:
-    """Create a TransitionMatrix object to operate on a MarkovStateVector object
+class MarkovTransitionMatrix:
+    """Create a MarkovTransitionMatrix object to operate on a MarkovStateVector object
 
     Keyword arguments:
         state_space -- MarkovStateSpace object for this system, i.e. a list of all possible MarkovState(s)
-        transition_function_list -- list of TransitionFunction objects, one for each combination in our state space
+        transition_function_list -- list of MarkovTransitionFunction objects,
+            one for each combination in our state space
     """
 
     def __init__(self, state_space, transition_function_list):
@@ -26,7 +27,7 @@ class TransitionMatrix:
         ])
 
     def __repr__(self):
-        return 'TransitionMatrix(state_space={}, transition_function_list={})'.format(
+        return 'MarkovTransitionMatrix(state_space={}, transition_function_list={})'.format(
             self.state_space, self.transition_function_list
         )
 
@@ -47,7 +48,7 @@ class TransitionMatrix:
 if __name__ == '__main__':
     from markov_model.MarkovState import MarkovState
     from markov_model.MarkovStateSpace import MarkovStateSpace
-    from markov_model.TransitionFunction import TransitionFunction
+    from markov_model.MarkovTransitionFunction import MarkovTransitionFunction
 
     def one_over_t(t):
         if t != 0:
@@ -59,13 +60,13 @@ if __name__ == '__main__':
     s2 = MarkovState(state_id='s2')
     sa = np.array([s1, s2])
     ss = MarkovStateSpace(state_array=sa)
-    tf_11 = TransitionFunction(state_id_tuple=('s1', 's1'), transition_function=one_over_t)
-    tf_12 = TransitionFunction(state_id_tuple=('s1', 's2'), transition_function=one_over_t)
-    tf_21 = TransitionFunction(state_id_tuple=('s2', 's1'), transition_function=one_over_t)
-    tf_22 = TransitionFunction(state_id_tuple=('s2', 's2'), transition_function=one_over_t)
+    tf_11 = MarkovTransitionFunction(state_id_tuple=('s1', 's1'), transition_function=one_over_t)
+    tf_12 = MarkovTransitionFunction(state_id_tuple=('s1', 's2'), transition_function=one_over_t)
+    tf_21 = MarkovTransitionFunction(state_id_tuple=('s2', 's1'), transition_function=one_over_t)
+    tf_22 = MarkovTransitionFunction(state_id_tuple=('s2', 's2'), transition_function=one_over_t)
     tfl = [tf_11, tf_12, tf_21, tf_22]
 
-    tm = TransitionMatrix(state_space=ss, transition_function_list=tfl)
+    tm = MarkovTransitionMatrix(state_space=ss, transition_function_list=tfl)
 
     print(tm.state_id_tuple_matrix)
     print(tm.transition_function_matrix)
