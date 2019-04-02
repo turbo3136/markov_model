@@ -52,4 +52,5 @@ mc = MarkovChain(initial_state=sv, state_space=ss, transition_matrix=tm, total_s
 
 print(mc.initial_state)
 print(mc.transition_matrix.matrix_at_time_step(time_step=0))
-print(mc.state_after_n_steps(mc.initial_state, 100))
+print(mc.state_after_n_steps(mc.initial_state, 2))
+print(mc.state_after_n_steps(mc.initial_state, np.arange(3)))  # vectorization!
