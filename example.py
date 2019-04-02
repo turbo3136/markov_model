@@ -6,6 +6,9 @@ Example:
     print out the state after n steps.
 """
 
+import time
+start = time.time()
+
 import numpy as np
 from markov_model.MarkovState import MarkovState
 from markov_model.MarkovStateSpace import MarkovStateSpace
@@ -48,9 +51,14 @@ ts = 0  # time_step
 sv = MarkovStateVector(state_space=ss, state_distribution=sd, time_step=ts)
 
 # markov chain
-mc = MarkovChain(initial_state=sv, state_space=ss, transition_matrix=tm, total_steps=None)
+mc = MarkovChain(initial_state=sv, state_space=ss, transition_matrix=tm, total_steps=10000)
 
 print(mc.initial_state)
-print(mc.transition_matrix.matrix_at_time_step(time_step=0))
-print(mc.state_after_n_steps(mc.initial_state, 2))
-print(mc.state_after_n_steps(mc.initial_state, np.arange(3)))  # vectorization!
+# print(mc.transition_matrix.matrix_at_time_step(time_step=0))
+# print(mc.state_after_n_steps(mc.initial_state, 10))
+# print(mc.vectorized_state_after_n_steps(mc.initial_state, np.arange(100)))  # vectorization!
+# print(mc.history)
+print(mc.current_state)
+
+end = time.time()
+print(end - start)
