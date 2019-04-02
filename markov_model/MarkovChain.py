@@ -44,7 +44,7 @@ class MarkovChain:
 
         return next_state
 
-    def state_after_n_steps(self, starting_state, n):
+    def non_vectorized_state_after_n_steps(self, starting_state, n):
         """return a MarkovStateVector object after applying n transitions"""
         current_state = copy.deepcopy(starting_state)
 
@@ -52,3 +52,11 @@ class MarkovChain:
             current_state = self.next_state(current_state)
 
         return current_state
+
+    def state_after_n_steps(self, starting_state, n):
+        """return a MarkovStateVector object after applying n transitions
+
+        vectorize to allow for array inputs for either starting_state or n, not both
+        """
+        vectorized_func = np.vectorize(self.non_vectorized_state_after_n_steps)
+        return vectorized_func(starting_state, n)
