@@ -36,9 +36,13 @@ class MarkovChain:
     def __repr__(self):
         return 'MarkovChain(initial_state={}, state_space={})'.format(self.initial_state, self.state_space)
 
-    def next_state(self, starting_state, log_history=False):
+    def next_state(self, starting_state, log_history=False, make_deepcopy=True):
         """return a MarkovStateVector object after applying the transition matrix"""
-        next_state = copy.deepcopy(starting_state)  # make a copy of the starting MarkovStateVector so we can update it
+        if make_deepcopy:  # make a copy of the starting MarkovStateVector so we can update it
+            next_state = copy.deepcopy(starting_state)
+        else:  # otherwise, just add a new reference
+            next_state = starting_state
+
         next_state.time_step += 1  # add 1 to the starting time_step
 
         # grab the starting state distribution and take the dot product of the transition matrix at the time_step
@@ -57,7 +61,7 @@ class MarkovChain:
         current_state = copy.deepcopy(starting_state)
 
         for step in np.arange(n):
-            current_state = self.next_state(current_state, log_history)
+            current_state = self.next_state(current_state, log_history, make_deepcopy=False)
 
         return current_state
 
