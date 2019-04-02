@@ -51,7 +51,7 @@ ts = 0  # time_step
 sv = MarkovStateVector(state_space=ss, state_distribution=sd, time_step=ts)
 
 # markov chain
-mc = MarkovChain(initial_state=sv, state_space=ss, transition_matrix=tm, total_steps=10000)
+mc = MarkovChain(initial_state=sv, state_space=ss, transition_matrix=tm, total_steps=10)
 
 print(mc.initial_state)
 # print(mc.transition_matrix.matrix_at_time_step(time_step=0))
