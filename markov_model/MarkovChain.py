@@ -10,6 +10,23 @@ class MarkovChain:
         state_space -- MarkovStateSpace object representing the state space, i.e. all possible MarkovState(s)
         transition_matrix -- MarkovTransitionMatrix object representing the transition matrix and its functions
         total_steps -- int representing the number of states we'll calculate past the initial time_step
+
+    Properties:
+        history -- array of states that the chain has occupied
+        current_state -- MarkovStateVector object representing the current state of the chain after total_steps
+
+    Methods:
+        next_state(starting_state, log_history, make_deepcopy) --
+            return the state after starting_state
+            if requested, log the history in self.history, default is False
+            if requested, make a deep copy of the starting_state, default is True
+
+        state_after_n_steps(starting_state, n, log_history) --
+            return the state n steps after starting_state
+            if requested, log the history in self.history, default is False
+
+        vectorized_state_after_n_steps(starting_state, n, log_history) --
+            same as state_after_n_steps, but allows for one of the arguments to be an array input
     """
 
     def __init__(self, initial_state, state_space, transition_matrix, total_steps):
