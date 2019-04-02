@@ -1,3 +1,7 @@
+import numpy as np
+import copy
+
+
 class MarkovChain:
     """Create a MarkovChain object based on an initial state, state space, and transition matrix
 
@@ -30,7 +34,7 @@ class MarkovChain:
 
     def next_state(self, starting_state):
         """return a MarkovStateVector object after applying the transition matrix"""
-        next_state = starting_state  # make a copy of the starting MarkovStateVector so we can update it
+        next_state = copy.deepcopy(starting_state)  # make a copy of the starting MarkovStateVector so we can update it
         next_state.time_step += 1  # add 1 to the starting time_step
 
         # grab the starting state distribution and take the dot product of the transition matrix at the time_step
@@ -41,18 +45,10 @@ class MarkovChain:
         return next_state
 
     def state_after_n_steps(self, starting_state, n):
-        """return a MarkovStateVector object after applying n transitions
+        """return a MarkovStateVector object after applying n transitions"""
+        current_state = copy.deepcopy(starting_state)
 
-        Warning: current implementation uses recursion, which has its limits in python.
-        Max is 989 recursive calls when I tested it.
-        """
-        if n == 0:  # in the special case where n = 0, we don't want to operate
-            return starting_state
+        for step in np.arange(n):
+            current_state = self.next_state(current_state)
 
-        starting_time_step = starting_state.time_step
-        ending_time_step = starting_time_step + n - 1
-
-        if starting_time_step == ending_time_step:  # if we're at the ending step, calculate the next state
-            return self.next_state(starting_state)
-        else:  # otherwise, recursively call this function with the next state as the input, reducing n by 1
-            return self.state_after_n_steps(self.next_state(starting_state), n - 1)
+        return current_state
