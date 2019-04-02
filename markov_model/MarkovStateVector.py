@@ -10,13 +10,14 @@ class MarkovStateVector:
         time_step -- time step for the system this vector represents
     """
 
-    def __init__(self, state_space, state_distribution, time_step):
+    def __init__(self, state_space, state_distribution, time_step, vector_name=None):
         if type(state_distribution) != np.ndarray:
             raise ValueError('MarkovStateVector.state_distribution expects a numpy ndarray object')
 
         self.state_space = state_space
         self.state_distribution = state_distribution
         self.time_step = time_step
+        self.vector_name = vector_name
 
         if self.state_space.size != len(self.state_distribution):
             raise ValueError(
