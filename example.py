@@ -15,7 +15,7 @@ from markov_model.MarkovTransitionMatrix import MarkovTransitionMatrix
 from markov_model.MarkovChain import MarkovChain
 
 
-# test functions
+# transition functions
 def exp_decay(t):
     return np.exp(-t)
 
