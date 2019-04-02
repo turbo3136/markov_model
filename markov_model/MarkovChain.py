@@ -41,9 +41,16 @@ class MarkovChain:
         return next_state
 
     def state_after_n_steps(self, starting_state, n):
-        """return a MarkovStateVector object after applying n transitions"""
+        """return a MarkovStateVector object after applying n transitions
+
+        Warning: current implementation uses recursion, which has its limits in python.
+        Max is 989 recursive calls when I tested it.
+        """
+        if n == 0:  # in the special case where n = 0, we don't want to operate
+            return starting_state
+
         starting_time_step = starting_state.time_step
-        ending_time_step = starting_time_step + n
+        ending_time_step = starting_time_step + n - 1
 
         if starting_time_step == ending_time_step:  # if we're at the ending step, calculate the next state
             return self.next_state(starting_state)
