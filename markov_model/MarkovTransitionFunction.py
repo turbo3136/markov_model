@@ -49,7 +49,7 @@ class MarkovTransitionFunction:
         Keyword arguments:
             xdata -- np array of x values
             ydata -- np array of y values to fit parameters to
-            update_args -- optional, boolean value for whether or not to update args class variable
+            update_args -- optional, boolean value for whether or not to update args instance variable
 
         Returns:
             popt -- optimal parameters found for the transition function, `f(xdata, *popt) - ydata` is minimized
