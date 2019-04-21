@@ -11,6 +11,8 @@ class MarkovTransitionFunction:
             initial and end states. transition_function's first argument must be t (time_step),
             followed by optional args
         args -- optional, values of optional arguments in transition function
+        xdata -- optional, numpy array of x axis data to be used for curve_fit
+        ydata -- optional, numpy array of y axis data to be used for curve_fit
         args_initial_guess -- optional, initial guess for args, used for fitting transition function to data
         args_bounds -- optional, 2-tuple of list, lower an upper bounds used for fitting transition function to data
         allow_fit -- optional, boolean for whether to allow fitting for this transition function
@@ -21,6 +23,8 @@ class MarkovTransitionFunction:
             state_id_tuple,
             transition_function,
             args=None,
+            xdata=None,
+            ydata=None,
             args_initial_guess=None,
             args_bounds=None,
             allow_fit=True,
@@ -28,9 +32,12 @@ class MarkovTransitionFunction:
         self.state_id_tuple = state_id_tuple
         self.transition_function = transition_function
         self.args = args
+        self.xdata = xdata
+        self.ydata = ydata
         self.args_initial_guess = args_initial_guess
         self.args_bounds = args_bounds
         self.allow_fit = allow_fit
+        self.original_args = args
 
     def __repr__(self):
         return 'MarkovTransitionFunction(state_id_tuple={})'.format(self.state_id_tuple)
@@ -42,13 +49,11 @@ class MarkovTransitionFunction:
 
         return self.transition_function(time_step)
 
-    def fit_to_data(self, xdata, ydata, update_args=True):
+    def fit_to_data(self, update_args=True):
         """fit transition function to data and optionally update the args based on the output
         Uses curve_fit: https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.curve_fit.html
 
         Keyword arguments:
-            xdata -- np array of x values
-            ydata -- np array of y values to fit parameters to
             update_args -- optional, boolean value for whether or not to update args instance variable
 
         Returns:
@@ -64,8 +69,8 @@ class MarkovTransitionFunction:
 
         popt, pcov = curve_fit(
             self.transition_function,
-            xdata=xdata,
-            ydata=ydata,
+            xdata=self.xdata,
+            ydata=self.ydata,
             p0=self.args_initial_guess,
             bounds=bounds,
         )
@@ -79,18 +84,20 @@ if __name__ == '__main__':
     def mx_plus_b(t, slope=1, intercept=0):
         return t * slope + intercept
 
+    x = np.array([0, 1, 2, 3, 4, 5])
+    y = np.array([0, 2, 4, 6, 8, 10])
+
     tf = MarkovTransitionFunction(
         state_id_tuple=('hello', 'world'),
         transition_function=mx_plus_b,
+        xdata=x,
+        ydata=y,
         args_initial_guess=[4, 10],
         args_bounds=([0, 0], [100, 100]),
     )
 
     print(tf.value_at_time_step(time_step=4))
-
-    x = np.array([0, 1, 2, 3, 4, 5])
-    y = np.array([0, 2, 4, 6, 8, 10])
     print(tf)
-    print(tf.fit_to_data(xdata=x, ydata=y, update_args=True))
+    print(tf.fit_to_data(update_args=True))
 
     print(tf.value_at_time_step(time_step=4))
