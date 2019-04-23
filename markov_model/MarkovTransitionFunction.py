@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.optimize import curve_fit
+import plotly.graph_objs as go
+from plotly.offline import plot
 
 
 class MarkovTransitionFunction:
@@ -79,19 +81,35 @@ class MarkovTransitionFunction:
 
         return popt
 
+    def plot_actual_vs_args(self, file_path=None):
+        x = self.xdata
+        y = self.ydata
+        y_fit = self.transition_function(x, *self.args)
+        if file_path:
+            plot([
+                go.Scatter(x=x, y=y, name='actual'),
+                go.Scatter(x=x, y=y_fit, name='fit'),
+            ], filename=file_path)
+        else:
+            plot([
+                go.Scatter(x=x, y=y, name='actual'),
+                go.Scatter(x=x, y=y_fit, name='fit'),
+            ])
+        return
+
 
 if __name__ == '__main__':
     def mx_plus_b(t, slope=1, intercept=0):
         return t * slope + intercept
 
-    x = np.array([0, 1, 2, 3, 4, 5])
-    y = np.array([0, 2, 4, 6, 8, 10])
+    test_x = np.array([0, 1, 2, 3, 4, 5])
+    test_y = np.array([0, 2, 4, 6, 8, 10])
 
     tf = MarkovTransitionFunction(
         state_id_tuple=('hello', 'world'),
         transition_function=mx_plus_b,
-        xdata=x,
-        ydata=y,
+        xdata=test_x,
+        ydata=test_y,
         args_initial_guess=[4, 10],
         args_bounds=([0, 0], [100, 100]),
     )
