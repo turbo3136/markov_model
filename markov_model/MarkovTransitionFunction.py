@@ -18,6 +18,7 @@ class MarkovTransitionFunction:
         args_initial_guess -- optional, initial guess for args, used for fitting transition function to data
         args_bounds -- optional, 2-tuple of list, lower an upper bounds used for fitting transition function to data
         allow_fit -- optional, boolean for whether to allow fitting for this transition function
+        attribute_function_dict -- optional, dict of MarkovTransitionFunction objects for named attributes
     """
 
     def __init__(
@@ -30,6 +31,7 @@ class MarkovTransitionFunction:
             args_initial_guess=None,
             args_bounds=None,
             allow_fit=True,
+            attribute_function_dict=None,
     ):
         self.state_id_tuple = state_id_tuple
         self.transition_function = transition_function
@@ -40,6 +42,7 @@ class MarkovTransitionFunction:
         self.args_bounds = args_bounds
         self.allow_fit = allow_fit
         self.original_args = args
+        self.attribute_function_dict = attribute_function_dict
 
     def __repr__(self):
         return 'MarkovTransitionFunction(state_id_tuple={})'.format(self.state_id_tuple)
@@ -96,6 +99,11 @@ class MarkovTransitionFunction:
                 go.Scatter(x=x, y=y_fit, name='fit'),
             ])
         return
+
+    def attribute_value_at_time_step(self, time_step, attribute):
+        """return the value of transition function at time_step multiplied by the attribute's function at time_step"""
+        return self.value_at_time_step(time_step) * \
+            self.attribute_function_dict[attribute].value_at_time_step(time_step)
 
 
 if __name__ == '__main__':
