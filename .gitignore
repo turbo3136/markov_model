@@ -120,3 +120,4 @@ myconfig.py
 .idea/
 data/
 static/
+temp/
