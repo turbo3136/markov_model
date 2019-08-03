@@ -15,10 +15,11 @@ class MarkovTransitionFunction:
         args -- optional, values of optional arguments in transition function
         xdata -- optional, numpy array of x axis data to be used for curve_fit
         ydata -- optional, numpy array of y axis data to be used for curve_fit
+        ydata_sigma -- optional, numpy array describing the variance of ydata
+        y2daya -- optional, numpy array of secondary y axis data
         args_initial_guess -- optional, initial guess for args, used for fitting transition function to data
         args_bounds -- optional, 2-tuple of list, lower an upper bounds used for fitting transition function to data
         allow_fit -- optional, boolean for whether to allow fitting for this transition function
-        attribute_function_dict -- optional, dict of MarkovTransitionFunction objects for named attributes
     """
 
     def __init__(
@@ -28,21 +29,23 @@ class MarkovTransitionFunction:
             args=None,
             xdata=None,
             ydata=None,
+            ydata_sigma=None,
+            y2data=None,
             args_initial_guess=None,
             args_bounds=None,
             allow_fit=True,
-            attribute_function_dict=None,
     ):
         self.state_id_tuple = state_id_tuple
         self.transition_function = transition_function
         self.args = args
         self.xdata = xdata
         self.ydata = ydata
+        self.ydata_sigma = ydata_sigma
+        self.y2data = y2data
         self.args_initial_guess = args_initial_guess
         self.args_bounds = args_bounds
         self.allow_fit = allow_fit
         self.original_args = args
-        self.attribute_function_dict = attribute_function_dict
 
     def __repr__(self):
         return 'MarkovTransitionFunction(state_id_tuple={})'.format(self.state_id_tuple)
@@ -72,11 +75,17 @@ class MarkovTransitionFunction:
         else:  # otherwise, use the provided bounds
             bounds = self.args_bounds
 
+        absolute_sigma = None
+        if self.ydata_sigma is not None:
+            absolute_sigma = False
+
         popt, pcov = curve_fit(
             self.transition_function,
             xdata=self.xdata,
             ydata=self.ydata,
             p0=self.args_initial_guess,
+            sigma=self.ydata_sigma,
+            absolute_sigma=absolute_sigma,
             bounds=bounds,
         )
         if update_args:
@@ -84,9 +93,13 @@ class MarkovTransitionFunction:
 
         return popt
 
-    def plot_actual_vs_args(self, file_path=None):
+    def plot_actual_vs_args(self, file_path=None, y2=False):
         x = self.xdata
         y = self.ydata
+
+        if y2:
+            y = self.y2data
+
         y_fit = self.transition_function(x, *self.args)
         if file_path:
             plot([
@@ -99,11 +112,6 @@ class MarkovTransitionFunction:
                 go.Scatter(x=x, y=y_fit, name='fit'),
             ])
         return
-
-    def attribute_value_at_time_step(self, time_step, attribute):
-        """return the value of transition function at time_step multiplied by the attribute's function at time_step"""
-        return self.value_at_time_step(time_step) * \
-            self.attribute_function_dict[attribute].value_at_time_step(time_step)
 
 
 if __name__ == '__main__':
