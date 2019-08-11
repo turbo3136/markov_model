@@ -12,6 +12,7 @@ class MarkovTransitionFunction:
         transition_function -- time dependent function representing the transition probability between
             initial and end states. transition_function's first argument must be t (time_step),
             followed by optional args
+        cohort -- optional, identifier for the cohort, if applicable
         args -- optional, values of optional arguments in transition function
         xdata -- optional, numpy array of x axis data to be used for curve_fit
         ydata -- optional, numpy array of y axis data to be used for curve_fit
@@ -26,6 +27,7 @@ class MarkovTransitionFunction:
             self,
             state_id_tuple,
             transition_function,
+            cohort=None,
             args=None,
             xdata=None,
             ydata=None,
@@ -37,6 +39,7 @@ class MarkovTransitionFunction:
     ):
         self.state_id_tuple = state_id_tuple
         self.transition_function = transition_function
+        self.cohort = cohort
         self.args = args
         self.xdata = xdata
         self.ydata = ydata
@@ -48,7 +51,7 @@ class MarkovTransitionFunction:
         self.original_args = args
 
     def __repr__(self):
-        return 'MarkovTransitionFunction(state_id_tuple={})'.format(self.state_id_tuple)
+        return 'MarkovTransitionFunction(cohort={}, state_id_tuple={})'.format(self.cohort, self.state_id_tuple)
 
     def value_at_time_step(self, time_step):
         """return the value of transition function at time_step using args if provided"""
