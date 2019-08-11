@@ -8,11 +8,13 @@ class MarkovTransitionMatrix:
         state_space -- MarkovStateSpace object for this system, i.e. a list of all possible MarkovState(s)
         transition_function_list -- list of MarkovTransitionFunction objects,
             one for each combination in our state space
+        cohort -- optional, identifier for the cohort, if applicable
     """
 
-    def __init__(self, state_space, transition_function_list):
+    def __init__(self, state_space, transition_function_list, cohort=None):
         self.state_space = state_space
         self.transition_function_list = transition_function_list
+        self.cohort = cohort
 
         # now we want to create the state pair matrix from the state space object
         self.state_array = self.state_space.state_array  # first we need to get the array for the state space
@@ -20,7 +22,9 @@ class MarkovTransitionMatrix:
 
         # now that we have a matrix of states, we want to create a matrix of tuple ids representing the transitions
         self.state_id_tuple_matrix = [[(i.state_id, j.state_id) for j in self.state_array] for i in self.state_array]
-        self.transition_function_matrix = np.matrix([  # creates a numpy matrix of transition functions
+
+        # now we create a numpy matrix of transition functions
+        self.transition_function_matrix = np.array([
             [
                 tf for tf in self.transition_function_list for tup in row if tup == tf.state_id_tuple
             ] for row in self.state_id_tuple_matrix
@@ -72,3 +76,5 @@ if __name__ == '__main__':
     print(tm.transition_function_matrix)
     # print(np.matrix(tm.transition_function_matrix))
     print(tm.matrix_at_time_step(time_step=2))
+    print(sum(tm.transition_function_matrix[0]))
+    # print(tm.transition_function_matrix[0][0])
