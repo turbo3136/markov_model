@@ -8,6 +8,7 @@ class MarkovChain:
     Keyword arguments:
         initial_state -- MarkovStateVector object representing the initial state of the chain
         state_space -- MarkovStateSpace object representing the state space, i.e. all possible MarkovState(s)
+        cohort -- optional, identifier for the cohort, if applicable
         transition_matrix -- MarkovTransitionMatrix object representing the transition matrix and its functions
         total_steps -- int representing the number of states we'll calculate past the initial time_step
 
@@ -29,7 +30,7 @@ class MarkovChain:
             same as state_after_n_steps, but allows for one of the arguments to be an array input
     """
 
-    def __init__(self, initial_state, state_space, transition_matrix, total_steps):
+    def __init__(self, initial_state, state_space, cohort, transition_matrix, total_steps):
         # do a few value checks on the sizes of the states and matrix
         if state_space.size != len(initial_state.state_distribution):
             raise ValueError(
@@ -43,6 +44,7 @@ class MarkovChain:
 
         self.initial_state = initial_state  # reminder: this is a MarkovStateVector object
         self.state_space = state_space  # reminder: this is a MarkovStateSpace object
+        self.cohort = cohort
         self.transition_matrix = transition_matrix  # reminder: this is a MarkovTransitionMatrix object
         self.total_steps = total_steps
         self.history = np.array([self.initial_state])  # initialize the history with the initial state

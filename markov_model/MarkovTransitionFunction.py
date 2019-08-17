@@ -21,6 +21,8 @@ class MarkovTransitionFunction:
         args_initial_guess -- optional, initial guess for args, used for fitting transition function to data
         args_bounds -- optional, 2-tuple of list, lower an upper bounds used for fitting transition function to data
         allow_fit -- optional, boolean for whether to allow fitting for this transition function
+        is_remainder -- optional, boolean for whether this function should be 1 - (other transition probabilities),
+            note that the value in a MarkovTransitionMatrix.value_at_time_step will be the remainder
     """
 
     def __init__(
@@ -36,6 +38,7 @@ class MarkovTransitionFunction:
             args_initial_guess=None,
             args_bounds=None,
             allow_fit=True,
+            is_remainder=False,
     ):
         self.state_id_tuple = state_id_tuple
         self.transition_function = transition_function
@@ -49,6 +52,7 @@ class MarkovTransitionFunction:
         self.args_bounds = args_bounds
         self.allow_fit = allow_fit
         self.original_args = args
+        self.is_remainder = is_remainder
 
     def __repr__(self):
         return 'MarkovTransitionFunction(cohort={}, state_id_tuple={})'.format(self.cohort, self.state_id_tuple)
