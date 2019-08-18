@@ -16,9 +16,4 @@ class MarkovState:
         self.state_description = state_description
 
     def __repr__(self):
-        return 'MarkovState(state_id={}, state_name={})'.format(self.state_id, self.state_name)
-
-
-if __name__ == '__main__':
-    s1 = MarkovState(state_id='test_id1')
-    print(s1.state_name)
+        return 'MarkovState(state_id={})'.format(self.state_id)

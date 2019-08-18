@@ -1,20 +1,74 @@
 import numpy as np
+from markov_model.MarkovTransitionFunction import MarkovTransitionFunction
 
 
 class MarkovTransitionMatrix:
     """Create a MarkovTransitionMatrix object to operate on a MarkovStateVector object
-
     Keyword arguments:
+        cohort -- identifier for the cohort, usually a datetime object
         state_space -- MarkovStateSpace object for this system, i.e. a list of all possible MarkovState(s)
-        transition_function_list -- list of MarkovTransitionFunction objects,
-            one for each combination in our state space
-        cohort -- optional, identifier for the cohort, if applicable
+        transitions_df
+        fit_data
+        cohort_column
+        old_state_id_column
+        new_state_id_column
+        transition_function_column
+        args_column
+        xdata_column
+        ydata_column
+        ydata_sigma_column
+        args_initial_guess_column
+        args_bounds
+        allow_fit
+        self_is_remainder
     """
 
-    def __init__(self, state_space, transition_function_list, cohort=None):
-        self.state_space = state_space
-        self.transition_function_list = transition_function_list
+    def __init__(
+            self,
+            cohort,
+            state_space,
+            transitions_df,
+
+            fit_data=True,
+            cohort_column='cohort',
+            old_state_id_column='old_state_id',
+            new_state_id_column='new_state_id',
+            transition_function_column='transition_function',
+            args_column='args',
+            xdata_column=None,
+            ydata_column='transition_probability',
+            ydata_sigma_column='transition_sigma',
+            args_initial_guess_column='args_initial_guess',
+            args_bounds_column='args_bounds',
+            allow_fit_column='allow_fit',
+            self_is_remainder=True,
+            markov_transition_function_column='markov_transition_function',
+    ):
         self.cohort = cohort
+        self.state_space = state_space
+        self.transitions_df = transitions_df
+
+        self.fit_data = fit_data
+        self.cohort_column = cohort_column
+        self.old_state_id_column = old_state_id_column
+        self.new_state_id_column = new_state_id_column
+        self.transition_function_column = transition_function_column
+        self.args_column = args_column
+        self.xdata_column = xdata_column
+        self.ydata_column = ydata_column
+        self.ydata_sigma_column = ydata_sigma_column
+        self.args_initial_guess_column = args_initial_guess_column
+        self.args_bounds_column = args_bounds_column
+        self.allow_fit_column = allow_fit_column
+        self.self_is_remainder = self_is_remainder
+        self.markov_transition_function_column = markov_transition_function_column
+
+        # add the markov_transition_function column to the dataframe, made of MarkovTransitionFunction objects
+        self.transitions_df[self.markov_transition_function_column] = self.transitions_df.apply(
+            self.create_markov_transition_function_column, axis=1
+        )
+        # and then create the list of MarkovTransitionFunctions
+        self.transition_function_list = self.transitions_df[self.markov_transition_function_column].tolist()
 
         # now we want to create the state pair matrix from the state space object
         self.state_array = self.state_space.state_array  # first we need to get the array for the state space
@@ -22,11 +76,20 @@ class MarkovTransitionMatrix:
 
         # now that we have a matrix of states, we want to create a matrix of tuple ids representing the transitions
         self.state_id_tuple_matrix = [[(i.state_id, j.state_id) for j in self.state_array] for i in self.state_array]
+        self.state_id_tuple_list = [(i.state_id, j.state_id) for j in self.state_array for i in self.state_array]
+
+        # now let's create a dictionary to lookup the transition_function for a state_id tuple
+        self.transition_function_lookup = {
+            tup: tf
+            for tf in self.transition_function_list
+            for tup in self.state_id_tuple_list
+            if tup == tf.state_id_tuple
+        }
 
         # now we create a numpy matrix of transition functions
         self.transition_function_matrix = np.array([
             [
-                tf for tf in self.transition_function_list for tup in row if tup == tf.state_id_tuple
+                self.transition_function_lookup[tup] for tup in row
             ] for row in self.state_id_tuple_matrix
         ])
 
@@ -35,46 +98,54 @@ class MarkovTransitionMatrix:
             self.state_space, self.transition_function_list
         )
 
-    @staticmethod
-    def transition_function_value_at_time_step(transition_function, time_step):
-        """just grab the value for the transition function at a certain time step"""
-        return transition_function.value_at_time_step(time_step=time_step)
-
     def matrix_at_time_step(self, time_step):
-        """vectorize the value at time step function and apply it to the transition_function_matrix
+        ret = np.empty_like(self.transition_function_matrix)
 
-        returns numpy matrix
-        """
-        vectorized_func = np.vectorize(self.transition_function_value_at_time_step)
-        return vectorized_func(self.transition_function_matrix, time_step)
+        remainder_check = False  # create a check to see if any of the functions are supposed to be the remainder
 
+        for row_index, row in enumerate(self.transition_function_matrix):
+            for tf_index, tf in enumerate(row):
+                if tf.is_remainder:
+                    remainder_check = True
+                    ret[row_index][tf_index] = 0
+                else:
+                    ret[row_index][tf_index] = tf.value_at_time_step(time_step)
 
-if __name__ == '__main__':
-    from markov_model.MarkovState import MarkovState
-    from markov_model.MarkovStateSpace import MarkovStateSpace
-    from markov_model.MarkovTransitionFunction import MarkovTransitionFunction
+        if remainder_check:  # if we want to set (state_i, state_i) transitions to the remainder, do it
+            for row_index, row in enumerate(self.transition_function_matrix):
+                for tf_index, tf in enumerate(row):
+                    if tf.is_remainder:
+                        ret[row_index][tf_index] = 1 - sum(ret[row_index])
 
-    def one_over_t(t):
-        if t != 0:
-            return 1/t
-        else:
-            return 1
+        return ret
 
-    s1 = MarkovState(state_id='s1')
-    s2 = MarkovState(state_id='s2')
-    sa = np.array([s1, s2])
-    ss = MarkovStateSpace(state_array=sa)
-    tf_11 = MarkovTransitionFunction(state_id_tuple=('s1', 's1'), transition_function=one_over_t)
-    tf_12 = MarkovTransitionFunction(state_id_tuple=('s1', 's2'), transition_function=one_over_t)
-    tf_21 = MarkovTransitionFunction(state_id_tuple=('s2', 's1'), transition_function=one_over_t)
-    tf_22 = MarkovTransitionFunction(state_id_tuple=('s2', 's2'), transition_function=one_over_t)
-    tfl = [tf_11, tf_12, tf_21, tf_22]
+    def create_markov_transition_function_column(self, row):
+        ydata = row[self.ydata_column]  # first grab the ydata array
+        if self.xdata_column is None:  # if we didn't provide xdata info, then create an array of length ydata
+            xdata = np.arange(len(ydata))
+        else:  # otherwise, grab the column provided
+            xdata = row[self.xdata_column]
 
-    tm = MarkovTransitionMatrix(state_space=ss, transition_function_list=tfl)
+        # if (state_i, state_i) transitions should be categorized as the remainder, let's capture that info
+        remainder_boolean = False
+        if self.self_is_remainder and row[self.old_state_id_column] == row[self.new_state_id_column]:
+            remainder_boolean = True
 
-    print(tm.state_id_tuple_matrix)
-    print(tm.transition_function_matrix)
-    # print(np.matrix(tm.transition_function_matrix))
-    print(tm.matrix_at_time_step(time_step=2))
-    print(sum(tm.transition_function_matrix[0]))
-    # print(tm.transition_function_matrix[0][0])
+        ret = MarkovTransitionFunction(
+            state_id_tuple=(row[self.old_state_id_column], row[self.new_state_id_column]),
+            transition_function=row[self.transition_function_column],
+            cohort=row[self.cohort_column],
+            args=row[self.args_column],
+            xdata=xdata,
+            ydata=ydata,
+            ydata_sigma=row[self.ydata_sigma_column],
+            args_initial_guess=row[self.args_initial_guess_column],
+            args_bounds=row[self.args_bounds_column],
+            allow_fit=row[self.allow_fit_column],
+            is_remainder=remainder_boolean,
+        )
+
+        if self.fit_data:
+            ret.fit_to_data()
+
+        return ret

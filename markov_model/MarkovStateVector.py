@@ -18,6 +18,7 @@ class MarkovStateVector:
         self.state_distribution = state_distribution
         self.time_step = time_step
         self.vector_name = vector_name
+        self.initial_time_step = time_step
 
         if self.state_space.size != len(self.state_distribution):
             raise ValueError(
