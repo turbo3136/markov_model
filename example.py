@@ -1,64 +1,162 @@
 """Example implementation of the markov_model package
 
 Example:
-    Let's imagine we have a system with two states. State 1 (s1) has time dependent transition probabilities
-    and State 2 (s2) has fixed transition probabilities of 0.5. Below, we create the necessary objects and
-    print out the state after n steps.
+    Let's imagine we have a weather system with three states, clear, windy, and rainy. The transition probability
+    to a different state is an exponential decay, meaning the state is likely to stay the same over time. We fit the
+    transition functions to the data provided and then observe the output.
 """
 
 import time
 start = time.time()
 
+from datetime import datetime
 import numpy as np
-from markov_model.MarkovState import MarkovState
-from markov_model.MarkovStateSpace import MarkovStateSpace
-from markov_model.MarkovStateVector import MarkovStateVector
-from markov_model.MarkovTransitionFunction import MarkovTransitionFunction
-from markov_model.MarkovTransitionMatrix import MarkovTransitionMatrix
-from markov_model.MarkovChain import MarkovChain
+from markov_model.MarkovModel import MarkovModel
+
+# debugging only
+import pandas as pd
+pd.set_option('display.expand_frame_repr', False)
 
 
-# transition functions
-def exp_decay(t):
-    return np.exp(-t)
+def exp_decay(t, size):
+    return size * np.exp(-t)
 
 
-def one_minus_exp_decay(t):
-    return 1 - exp_decay(t)
+def flat_line(t, height):
+    return height
 
 
-def point_five(t):
-    return 0.5
+total_steps_test = 4
 
+transitions_dict = {
+    'cohort': [
+        datetime(2019, 1, 1),
+        datetime(2019, 1, 1),
+        datetime(2019, 1, 1),
+        datetime(2019, 1, 1),
+        datetime(2019, 1, 1),
+        datetime(2019, 1, 1),
+        datetime(2019, 1, 1),
+        datetime(2019, 1, 1),
+        datetime(2019, 1, 1),
+    ],
+    'old_state_id': [
+        'clear',
+        'clear',
+        'clear',
+        'windy',
+        'windy',
+        'windy',
+        'rainy',
+        'rainy',
+        'rainy',
+    ],
+    'new_state_id': [
+        'clear',
+        'windy',
+        'rainy',
+        'clear',
+        'windy',
+        'rainy',
+        'clear',
+        'windy',
+        'rainy',
+    ],
+    'transition_function': [
+        flat_line,
+        exp_decay,
+        exp_decay,
+        exp_decay,
+        flat_line,
+        exp_decay,
+        exp_decay,
+        exp_decay,
+        flat_line,
+    ],
+    'args': [
+        [0.1],
+        [0.1],
+        [0.1],
+        [0.1],
+        [0.1],
+        [0.1],
+        [0.1],
+        [0.1],
+        [0.1],
+    ],
+    'transition_probability': [
+        [0.6, 0.86, 0.94],
+        [0.2, 0.07, 0.03],
+        [0.2, 0.07, 0.03],
+        [0.2, 0.07, 0.03],
+        [0.6, 0.86, 0.94],
+        [0.2, 0.07, 0.03],
+        [0.2, 0.07, 0.03],
+        [0.2, 0.07, 0.03],
+        [0.6, 0.86, 0.94],
+    ],
+    'transition_sigma': [
+        [1, 1, 1],
+        [1, 1, 1],
+        [1, 1, 1],
+        [1, 1, 1],
+        [1, 1, 1],
+        [1, 1, 1],
+        [1, 1, 1],
+        [1, 1, 1],
+        [1, 1, 1],
+    ],
+    'args_initial_guess': [
+        [0.1],
+        [0.1],
+        [0.1],
+        [0.1],
+        [0.1],
+        [0.1],
+        [0.1],
+        [0.1],
+        [0.1],
+    ],
+    'args_bounds': [
+        ([0], [1]),
+        ([0], [1]),
+        ([0], [1]),
+        ([0], [1]),
+        ([0], [1]),
+        ([0], [1]),
+        ([0], [1]),
+        ([0], [1]),
+        ([0], [1]),
+    ],
+    'allow_fit': [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+    ]
+}
 
-# states
-s1 = MarkovState(state_id='s1')
-s2 = MarkovState(state_id='s2')
-sa = np.array([s1, s2])  # state_array
-# state space
-ss = MarkovStateSpace(state_array=sa)
-# transition functions
-tf_11 = MarkovTransitionFunction(state_id_tuple=('s1', 's1'), transition_function=exp_decay)
-tf_12 = MarkovTransitionFunction(state_id_tuple=('s1', 's2'), transition_function=one_minus_exp_decay)
-tf_21 = MarkovTransitionFunction(state_id_tuple=('s2', 's1'), transition_function=point_five)
-tf_22 = MarkovTransitionFunction(state_id_tuple=('s2', 's2'), transition_function=point_five)
-tfl = [tf_11, tf_12, tf_21, tf_22]
-# transition matrix
-tm = MarkovTransitionMatrix(state_space=ss, transition_function_list=tfl)
-# state vector
-sd = np.array([1, 0])  # state_distribution
-ts = 0  # time_step
-sv = MarkovStateVector(state_space=ss, state_distribution=sd, time_step=ts)
+state_dict = {
+    'cohort': [datetime(2019, 1, 1), datetime(2019, 1, 1), datetime(2019, 1, 1)],
+    'state_id': ['clear', 'windy', 'rainy'],
+    'distribution': [100, 0, 0],
+    'time_step': [3, 3, 3],
+}
 
-# markov chain
-mc = MarkovChain(initial_state=sv, state_space=ss, transition_matrix=tm, total_steps=10)
+state_df_test = pd.DataFrame.from_dict(state_dict)
+transitions_df_test = pd.DataFrame.from_dict(transitions_dict)
 
-print(mc.initial_state)
-# print(mc.transition_matrix.matrix_at_time_step(time_step=0))
-# print(mc.state_after_n_steps(mc.initial_state, 10))
-# print(mc.vectorized_state_after_n_steps(mc.initial_state, np.arange(100)))  # vectorization!
-# print(mc.history)
-print(mc.current_state)
+mm = MarkovModel(initial_state_df=state_df_test, transitions_df=transitions_df_test, total_steps=total_steps_test)
+
+for cohort, chain in mm.markov_chains.items():
+    print(chain.history)
+    print(chain.markov_transition_matrix.matrix_at_time_step(3))
+    print(sum(chain.current_state.state_distribution))
 
 end = time.time()
 print(end - start)
