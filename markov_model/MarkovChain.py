@@ -1,5 +1,4 @@
 import numpy as np
-import copy
 from markov_model.MarkovStateSpace import MarkovStateSpace
 from markov_model.MarkovStateVector import MarkovStateVector
 from markov_model.MarkovTransitionMatrix import MarkovTransitionMatrix
@@ -52,8 +51,10 @@ class MarkovChain:
             args_initial_guess_column='args_initial_guess',
             args_bounds_column='args_bounds',
             allow_fit_column='allow_fit',
+
             self_is_remainder=True,
             markov_transition_function_column='markov_transition_function_column',
+            time_step_interval='month',
     ):
         self.cohort = cohort
         self.initial_state_df = initial_state_df
@@ -76,8 +77,10 @@ class MarkovChain:
         self.args_initial_guess_column = args_initial_guess_column
         self.args_bounds_column = args_bounds_column
         self.allow_fit_column = allow_fit_column
+
         self.self_is_remainder = self_is_remainder
         self.markov_transition_function_column = markov_transition_function_column
+        self.time_step_interval = time_step_interval
 
         # check to see if we have more than one cohort, if so raise an error
         if len(self.initial_state_df[self.cohort_column].unique()) != 1 or \
@@ -116,9 +119,11 @@ class MarkovChain:
 
         # now let's create the MarkovStateVector object
         self.markov_state_vector = MarkovStateVector(
+            cohort=self.cohort,
             state_space=self.markov_state_space,
             state_distribution=self.initial_state_distribution,
             time_step=self.initial_state_time_step,
+            time_step_interval=self.time_step_interval,
         )
         self.history = np.array([self.markov_state_vector])  # initialize the history with the initial state
 
@@ -149,6 +154,8 @@ class MarkovChain:
             self.markov_state_vector, self.total_steps, log_history=True
         )
 
+        self.state_distribution_history()
+
     def __repr__(self):
         return 'MarkovChain(current_state={}, state_space={})'.format(
             self.current_state, self.markov_state_space
@@ -157,7 +164,13 @@ class MarkovChain:
     def next_state(self, starting_state, log_history=False, make_deepcopy=True):
         """return a MarkovStateVector object after applying the transition matrix"""
         if make_deepcopy:  # make a copy of the starting MarkovStateVector so we can update it
-            next_state = copy.deepcopy(starting_state)
+            next_state = MarkovStateVector(
+                cohort=starting_state.cohort,
+                state_space=starting_state.state_space,
+                state_distribution=starting_state.state_distribution,
+                time_step=starting_state.time_step,
+                time_step_interval=starting_state.time_step_interval
+            )
         else:  # otherwise, just add a new reference
             next_state = starting_state
 
@@ -176,7 +189,13 @@ class MarkovChain:
 
     def state_after_n_steps(self, starting_state, n, log_history=False):
         """return a MarkovStateVector object after applying n transitions"""
-        current_state = copy.deepcopy(starting_state)
+        current_state = MarkovStateVector(
+            cohort=starting_state.cohort,
+            state_space=starting_state.state_space,
+            state_distribution=starting_state.state_distribution,
+            time_step=starting_state.time_step,
+            time_step_interval=starting_state.time_step_interval
+        )
 
         for step in np.arange(n):
             current_state = self.next_state(current_state, log_history)
@@ -190,3 +209,7 @@ class MarkovChain:
         """
         vectorized_func = np.vectorize(self.state_after_n_steps)
         return vectorized_func(starting_state, n, log_history)
+
+    def state_distribution_history(self):
+        for vector in self.history:
+            print(vector.state_distribution)

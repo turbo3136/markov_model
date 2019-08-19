@@ -28,8 +28,10 @@ class MarkovModel:
             args_initial_guess_column='args_initial_guess',
             args_bounds_column='args_bounds',
             allow_fit_column=True,
+
             self_is_remainder=True,
             markov_transition_function_column='markov_transition_function_column',
+            time_step_interval='month',
     ):
         self.initial_state_df = initial_state_df
         self.transitions_df = transitions_df
@@ -51,8 +53,10 @@ class MarkovModel:
         self.args_initial_guess_column = args_initial_guess_column
         self.args_bounds_column = args_bounds_column
         self.allow_fit_column = allow_fit_column
+
         self.self_is_remainder = self_is_remainder
         self.markov_transition_function_column = markov_transition_function_column
+        self.time_step_interval = time_step_interval
 
         # first, we get a list of all unique cohorts and make sure the cohorts are the same across inputs
         self.unique_cohorts = self.initial_state_df[self.cohort_column].unique()
@@ -90,7 +94,11 @@ class MarkovModel:
                 args_initial_guess_column=self.args_initial_guess_column,
                 args_bounds_column=self.args_bounds_column,
                 allow_fit_column=self.allow_fit_column,
+
                 self_is_remainder=self.self_is_remainder,
                 markov_transition_function_column=self.markov_transition_function_column,
+                time_step_interval=self.time_step_interval,
             ) for cohort in self.unique_cohorts
         }
+
+

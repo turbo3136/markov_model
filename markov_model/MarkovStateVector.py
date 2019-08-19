@@ -1,4 +1,5 @@
 import numpy as np
+import helpers
 
 
 class MarkovStateVector:
@@ -10,15 +11,21 @@ class MarkovStateVector:
         time_step -- time step for the system this vector represents
     """
 
-    def __init__(self, state_space, state_distribution, time_step, vector_name=None):
+    def __init__(self, cohort, state_space, state_distribution, time_step, time_step_interval):
         if type(state_distribution) != np.ndarray:
             raise ValueError('MarkovStateVector.state_distribution expects a numpy ndarray object')
 
+        self.cohort = cohort
         self.state_space = state_space
         self.state_distribution = state_distribution
         self.time_step = time_step
-        self.vector_name = vector_name
         self.initial_time_step = time_step
+        self.time_step_interval = time_step_interval
+        self.current_date = helpers.add_interval_to_date(
+            date_object=helpers.date_string_to_datetime(self.cohort),
+            steps=self.time_step,
+            interval=self.time_step_interval,
+        )
 
         if self.state_space.size != len(self.state_distribution):
             raise ValueError(
@@ -26,6 +33,6 @@ class MarkovStateVector:
             )
 
     def __repr__(self):
-        return 'MarkovStateVector(state_space={}, state_distribution={}, time_step={})'.format(
-            self.state_space, self.state_distribution, self.time_step
+        return 'MarkovStateVector(cohort={}, state_space={}, state_distribution={}, time_step={})'.format(
+            self.cohort, self.state_space, self.state_distribution, self.time_step
         )

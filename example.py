@@ -30,15 +30,15 @@ total_steps_test = 4
 
 transitions_dict = {
     'cohort': [
-        datetime(2019, 1, 1),
-        datetime(2019, 1, 1),
-        datetime(2019, 1, 1),
-        datetime(2019, 1, 1),
-        datetime(2019, 1, 1),
-        datetime(2019, 1, 1),
-        datetime(2019, 1, 1),
-        datetime(2019, 1, 1),
-        datetime(2019, 1, 1),
+        '2019-01-01',
+        '2019-01-01',
+        '2019-01-01',
+        '2019-01-01',
+        '2019-01-01',
+        '2019-01-01',
+        '2019-01-01',
+        '2019-01-01',
+        '2019-01-01',
     ],
     'old_state_id': [
         'clear',
@@ -142,7 +142,7 @@ transitions_dict = {
 }
 
 state_dict = {
-    'cohort': [datetime(2019, 1, 1), datetime(2019, 1, 1), datetime(2019, 1, 1)],
+    'cohort': ['2019-01-01', '2019-01-01', '2019-01-01'],
     'state_id': ['clear', 'windy', 'rainy'],
     'distribution': [100, 0, 0],
     'time_step': [3, 3, 3],
@@ -155,8 +155,10 @@ mm = MarkovModel(initial_state_df=state_df_test, transitions_df=transitions_df_t
 
 for cohort, chain in mm.markov_chains.items():
     print(chain.history)
-    print(chain.markov_transition_matrix.matrix_at_time_step(3))
-    print(sum(chain.current_state.state_distribution))
+    for vector in chain.history:
+        print(vector.time_step, vector.state_distribution, vector.current_date)
+    # print(chain.markov_transition_matrix.matrix_at_time_step(3))
+    # print(sum(chain.current_state.state_distribution))
 
 end = time.time()
-print(end - start)
+# print(end - start)
