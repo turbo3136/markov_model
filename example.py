@@ -161,4 +161,4 @@ for cohort, chain in mm.markov_chains.items():
     # print(sum(chain.current_state.state_distribution))
 
 end = time.time()
-# print(end - start)
+print(end - start)

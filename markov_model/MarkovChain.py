@@ -168,13 +168,11 @@ class MarkovChain:
                 cohort=starting_state.cohort,
                 state_space=starting_state.state_space,
                 state_distribution=starting_state.state_distribution,
-                time_step=starting_state.time_step,
+                time_step=starting_state.time_step + 1,
                 time_step_interval=starting_state.time_step_interval
             )
         else:  # otherwise, just add a new reference
             next_state = starting_state
-
-        next_state.time_step += 1  # add 1 to the starting time_step
 
         # grab the starting state distribution and take the dot product of the transition matrix at the time_step
         next_state.state_distribution = starting_state.state_distribution.dot(
