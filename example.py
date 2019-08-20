@@ -144,19 +144,21 @@ transitions_dict = {
 state_dict = {
     'cohort': ['2019-01-01', '2019-01-01', '2019-01-01'],
     'state_id': ['clear', 'windy', 'rainy'],
-    'distribution': [100, 0, 0],
+    'distribution': [1, 0, 0],
+    'count': [100, 0, 0],
     'time_step': [3, 3, 3],
 }
 
 state_df_test = pd.DataFrame.from_dict(state_dict)
 transitions_df_test = pd.DataFrame.from_dict(transitions_dict)
 
-mm = MarkovModel(initial_state_df=state_df_test, transitions_df=transitions_df_test, total_steps=total_steps_test)
+mm = MarkovModel(initial_state_df=state_df_test, transitions_df=transitions_df_test, total_steps=total_steps_test, time_step_interval='day')
 
 for cohort, chain in mm.markov_chains.items():
-    print(chain.history)
-    for vector in chain.history:
-        print(vector.time_step, vector.state_distribution, vector.current_date)
+    print(chain.state_distribution_history())
+    # print(chain.history)
+    # for vector in chain.history:
+    #     print(vector.time_step, vector.state_distribution, vector.current_date)
     # print(chain.markov_transition_matrix.matrix_at_time_step(3))
     # print(sum(chain.current_state.state_distribution))
 

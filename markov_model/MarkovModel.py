@@ -14,6 +14,7 @@ class MarkovModel:
 
             initial_state_column='state_id',
             initial_state_distribution_column='distribution',
+            initial_state_count_column='count',
             initial_state_time_step_column='time_step',
 
             fit_data=True,
@@ -39,6 +40,7 @@ class MarkovModel:
 
         self.initial_state_column = initial_state_column
         self.initial_state_distribution_column = initial_state_distribution_column
+        self.initial_state_count_column = initial_state_count_column
         self.initial_state_time_step_column = initial_state_time_step_column
 
         self.fit_data = fit_data
@@ -80,6 +82,7 @@ class MarkovModel:
 
                 initial_state_column=self.initial_state_column,
                 initial_state_distribution_column=self.initial_state_distribution_column,
+                initial_state_count_column=self.initial_state_count_column,
                 initial_state_time_step_column=self.initial_state_time_step_column,
 
                 fit_data=self.fit_data,

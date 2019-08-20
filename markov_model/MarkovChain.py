@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from markov_model.MarkovStateSpace import MarkovStateSpace
 from markov_model.MarkovStateVector import MarkovStateVector
 from markov_model.MarkovTransitionMatrix import MarkovTransitionMatrix
@@ -15,17 +16,13 @@ class MarkovChain:
         current_state -- MarkovStateVector object representing the current state of the chain after total_steps
 
     Methods:
-        next_state(starting_state, log_history, make_deepcopy) --
+        next_state(starting_state, log_history) --
             return the state after starting_state
             if requested, log the history in self.history, default is False
-            if requested, make a deep copy of the starting_state, default is True
 
         state_after_n_steps(starting_state, n, log_history) --
             return the state n steps after starting_state
             if requested, log the history in self.history, default is False
-
-        vectorized_state_after_n_steps(starting_state, n, log_history) --
-            same as state_after_n_steps, but allows for one of the arguments to be an array input
     """
 
     def __init__(
@@ -37,6 +34,7 @@ class MarkovChain:
 
             initial_state_column='state_id',
             initial_state_distribution_column='distribution',
+            initial_state_count_column='count',
             initial_state_time_step_column='time_step',
 
             fit_data=True,
@@ -63,6 +61,7 @@ class MarkovChain:
 
         self.initial_state_column = initial_state_column
         self.initial_state_distribution_column = initial_state_distribution_column
+        self.initial_state_count_column = initial_state_count_column
         self.initial_state_time_step_column = initial_state_time_step_column
 
         self.fit_data = fit_data
@@ -117,6 +116,9 @@ class MarkovChain:
             )
         self.initial_state_time_step = self.initial_state_dict[self.initial_state_time_step_column][0]
 
+        # now let's sum up the initial state count column to figure out the total size of the vector
+        self.cohort_size = self.initial_state_df[self.initial_state_count_column].sum()
+
         # now let's create the MarkovStateVector object
         self.markov_state_vector = MarkovStateVector(
             cohort=self.cohort,
@@ -124,6 +126,7 @@ class MarkovChain:
             state_distribution=self.initial_state_distribution,
             time_step=self.initial_state_time_step,
             time_step_interval=self.time_step_interval,
+            size=self.cohort_size,
         )
         self.history = np.array([self.markov_state_vector])  # initialize the history with the initial state
 
@@ -154,29 +157,24 @@ class MarkovChain:
             self.markov_state_vector, self.total_steps, log_history=True
         )
 
-        self.state_distribution_history()
+        # self.state_distribution_history()
 
     def __repr__(self):
         return 'MarkovChain(current_state={}, state_space={})'.format(
             self.current_state, self.markov_state_space
         )
 
-    def next_state(self, starting_state, log_history=False, make_deepcopy=True):
+    def next_state(self, starting_state, log_history=False):
         """return a MarkovStateVector object after applying the transition matrix"""
-        if make_deepcopy:  # make a copy of the starting MarkovStateVector so we can update it
-            next_state = MarkovStateVector(
-                cohort=starting_state.cohort,
-                state_space=starting_state.state_space,
-                state_distribution=starting_state.state_distribution,
-                time_step=starting_state.time_step + 1,
-                time_step_interval=starting_state.time_step_interval
-            )
-        else:  # otherwise, just add a new reference
-            next_state = starting_state
-
-        # grab the starting state distribution and take the dot product of the transition matrix at the time_step
-        next_state.state_distribution = starting_state.state_distribution.dot(
-            self.markov_transition_matrix.matrix_at_time_step(starting_state.time_step)
+        next_state = MarkovStateVector(
+            cohort=starting_state.cohort,
+            state_space=starting_state.state_space,
+            state_distribution=starting_state.state_distribution.dot(  # increment the state_distribution
+                self.markov_transition_matrix.matrix_at_time_step(starting_state.time_step)
+            ),
+            time_step=starting_state.time_step + 1,  # increment the time_step
+            time_step_interval=starting_state.time_step_interval,
+            size=starting_state.size,
         )
 
         # check to see if we want to log the history
@@ -192,7 +190,8 @@ class MarkovChain:
             state_space=starting_state.state_space,
             state_distribution=starting_state.state_distribution,
             time_step=starting_state.time_step,
-            time_step_interval=starting_state.time_step_interval
+            time_step_interval=starting_state.time_step_interval,
+            size=starting_state.size
         )
 
         for step in np.arange(n):
@@ -200,14 +199,48 @@ class MarkovChain:
 
         return current_state
 
-    def vectorized_state_after_n_steps(self, starting_state, n, log_history=False):
-        """return a MarkovStateVector object after applying n transitions
+    def state_distribution_history(
+            self,
+            date_column='date',
+            time_step_column='time_step',
+            state_id_column='state_id',
+            distribution_column='distribution',
+            count_column='count',
+    ):
+        """dataframe of state distribution with current date, time_step, and state_ids as the columns
 
-        vectorize to allow for array inputs for either starting_state or n, not both
+        output looks like:
+            date        time_step   state_id      distribution  count
+            2019-01-01  0           state_i       0.4           88
+            2019-01-01  0           state_j       0.4           88
+            2019-01-01  0           state_k       0.2           44
+            .
+            .
+            .
         """
-        vectorized_func = np.vectorize(self.state_after_n_steps)
-        return vectorized_func(starting_state, n, log_history)
+        ret = {date_column: [], time_step_column: [], state_id_column: [], distribution_column: [], count_column: []}
+        for index, vector in enumerate(self.history):
+            for state_id, distribution in vector.state_distribution_dict.items():
+                ret[date_column].append(vector.current_date)  # add the date to the list
+                ret[time_step_column].append(vector.time_step)  # add the time step to the list
+                ret[state_id_column].append(state_id)  # add the state_id to the list
+                ret[distribution_column].append(distribution)  # add the distribution in this state to the list
+                ret[count_column].append(vector.size * distribution)  # add the count of items in this state
 
-    def state_distribution_history(self):
-        for vector in self.history:
-            print(vector.state_distribution)
+        return pd.DataFrame.from_dict(ret)
+
+    # TODO: dataframe of transition probability and counts for state pairs (state_i, state_j) by current date
+    def state_transition_history(self, date_column='date', time_step_column='time_step'):
+        """dataframe of transition probability between state_id tuples
+
+        output looks like:
+            date        time_step   state_id_tuple      transition_probability  transitions
+            2019-01-01  0           (state_i, state_i)  0.4                     88
+            2019-01-01  0           (state_i, state_j)  0.4                     88
+            2019-01-01  0           (state_i, state_k)  0.2                     44
+            .
+            .
+            .
+        """
+        # print(self.markov_transition_matrix.matrix_at_time_step(self.current_state.time_step))
+        # print(self.markov_transition_matrix.state_id_tuple_matrix)

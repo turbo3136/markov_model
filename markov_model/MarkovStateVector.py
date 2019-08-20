@@ -11,7 +11,7 @@ class MarkovStateVector:
         time_step -- time step for the system this vector represents
     """
 
-    def __init__(self, cohort, state_space, state_distribution, time_step, time_step_interval):
+    def __init__(self, cohort, state_space, state_distribution, time_step, time_step_interval, size=1):
         if type(state_distribution) != np.ndarray:
             raise ValueError('MarkovStateVector.state_distribution expects a numpy ndarray object')
 
@@ -21,11 +21,19 @@ class MarkovStateVector:
         self.time_step = time_step
         self.initial_time_step = time_step
         self.time_step_interval = time_step_interval
+        self.size = size
+
         self.current_date = helpers.add_interval_to_date(
             date_object=helpers.date_string_to_datetime(self.cohort),
             steps=self.time_step,
             interval=self.time_step_interval,
         )
+
+        self.total_state_distribution_size = sum(self.state_distribution)
+
+        self.state_distribution_dict = {
+            state_id: self.state_distribution[index] for index, state_id in enumerate(self.state_space.state_id_list)
+        }
 
         if self.state_space.size != len(self.state_distribution):
             raise ValueError(

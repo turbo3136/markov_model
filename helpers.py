@@ -16,7 +16,7 @@ def add_interval_to_date(date_object, steps, interval):
         years = steps
     elif interval == 'month':
         months = steps
-    elif interval == 'days':
+    elif interval == 'day':
         days = steps
     else:
         raise ValueError('expected one of year, month, or day, got {}'.format(interval))
