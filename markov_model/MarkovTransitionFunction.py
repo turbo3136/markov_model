@@ -94,7 +94,8 @@ class MarkovTransitionFunction:
 
         return popt
 
-    def plot_actual_vs_args(self, file_path=None, y2=False):
+    def plot_actual_vs_args(self, file_path=None):
+        # TODO: check that this data is a numpy array
         x = self.xdata
         y = self.ydata
 
