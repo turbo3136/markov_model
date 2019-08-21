@@ -86,6 +86,13 @@ class MarkovTransitionMatrix:
             if tup == tf.state_id_tuple
         }
 
+        # let's create a dictionary to lookup the position of a state_id tuple within the matrix
+        self.state_id_tuple_position_lookup = {
+            tup: (i, j)
+            for i, row in enumerate(self.state_id_tuple_matrix)
+            for j, tup in enumerate(row)
+        }
+
         # now we create a numpy matrix of transition functions
         self.transition_function_matrix = np.array([
             [
@@ -111,6 +118,7 @@ class MarkovTransitionMatrix:
                 else:
                     ret[row_index][tf_index] = tf.value_at_time_step(time_step)
 
+        # TODO: this is not an elegant solution
         if remainder_check:  # if we want to set (state_i, state_i) transitions to the remainder, do it
             for row_index, row in enumerate(self.transition_function_matrix):
                 for tf_index, tf in enumerate(row):
@@ -119,7 +127,14 @@ class MarkovTransitionMatrix:
 
         return ret
 
+    def state_id_tuple_value_at_time_step(self, matrix_at_time_step, state_id_tuple):
+        """take a matrix_at_time_step and return the transition probability for a state_id tuple"""
+        position_tuple = self.state_id_tuple_position_lookup[state_id_tuple]
+
+        return matrix_at_time_step[position_tuple[0], position_tuple[1]]
+
     def create_markov_transition_function_column(self, row):
+        """take a row of a dataframe and return a MarkovTransitionFunction object"""
         ydata = row[self.ydata_column]  # first grab the ydata array
         if self.xdata_column is None:  # if we didn't provide xdata info, then create an array of length ydata
             xdata = np.arange(len(ydata))

@@ -166,12 +166,12 @@ class MarkovChain:
 
     def next_state(self, starting_state, log_history=False):
         """return a MarkovStateVector object after applying the transition matrix"""
+        mat = self.markov_transition_matrix.matrix_at_time_step(starting_state.time_step)
+
         next_state = MarkovStateVector(
             cohort=starting_state.cohort,
             state_space=starting_state.state_space,
-            state_distribution=starting_state.state_distribution.dot(  # increment the state_distribution
-                self.markov_transition_matrix.matrix_at_time_step(starting_state.time_step)
-            ),
+            state_distribution=starting_state.state_distribution.dot(mat),  # increment the state_distribution
             time_step=starting_state.time_step + 1,  # increment the time_step
             time_step_interval=starting_state.time_step_interval,
             size=starting_state.size,
@@ -230,17 +230,47 @@ class MarkovChain:
         return pd.DataFrame.from_dict(ret)
 
     # TODO: dataframe of transition probability and counts for state pairs (state_i, state_j) by current date
-    def state_transition_history(self, date_column='date', time_step_column='time_step'):
+    def state_transition_history(
+            self,
+            date_column='date',
+            time_step_column='time_step',
+            old_state_id_column='old_state_id',
+            new_state_id_column='new_state_id',
+            transition_probability_column='transition_probability',
+            transition_count_column='transition_count',
+    ):
         """dataframe of transition probability between state_id tuples
 
         output looks like:
-            date        time_step   state_id_tuple      transition_probability  transitions
-            2019-01-01  0           (state_i, state_i)  0.4                     88
-            2019-01-01  0           (state_i, state_j)  0.4                     88
-            2019-01-01  0           (state_i, state_k)  0.2                     44
+            date        time_step   old_state_id    new_state_id      transition_probability  transition_count
+            2019-01-01  0           state_i         state_i           0.4                     88
+            2019-01-01  0           state_i         state_j           0.4                     88
+            2019-01-01  0           state_i         state_k           0.2                     44
             .
             .
             .
         """
-        # print(self.markov_transition_matrix.matrix_at_time_step(self.current_state.time_step))
-        # print(self.markov_transition_matrix.state_id_tuple_matrix)
+        ret = {
+            date_column: [],
+            time_step_column: [],
+            old_state_id_column: [],
+            new_state_id_column: [],
+            transition_probability_column: [],
+            transition_count_column: [],
+        }
+        for index, vector in enumerate(self.history):
+            # TODO: log the matrix history ahead of time so we don't have to calculate this again
+            mat = self.markov_transition_matrix.matrix_at_time_step(time_step=vector.time_step)
+            state_id_list = vector.state_space.state_id_list  # list of state_ids
+
+            for i, row in enumerate(mat):
+                for j, value in enumerate(row):
+                    ret[date_column].append(vector.current_date)  # add the date to the list
+                    ret[time_step_column].append(vector.time_step)  # add the time step to the list
+                    ret[old_state_id_column].append(state_id_list[i])  # add the state_id to the list
+                    ret[new_state_id_column].append(state_id_list[j])  # add the state_id to the list
+                    ret[transition_probability_column].append(mat[i][j])  # add the transition_probability
+                    # and finally the count of transitions between the old and new state
+                    ret[transition_count_column].append(vector.state_distribution[i] * vector.size * mat[i][j])
+
+        return pd.DataFrame.from_dict(ret)
