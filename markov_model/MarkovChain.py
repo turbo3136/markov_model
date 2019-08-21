@@ -201,6 +201,7 @@ class MarkovChain:
 
     def state_distribution_history(
             self,
+            cohort_column='cohort',
             date_column='date',
             time_step_column='time_step',
             state_id_column='state_id',
@@ -210,17 +211,25 @@ class MarkovChain:
         """dataframe of state distribution with current date, time_step, and state_ids as the columns
 
         output looks like:
-            date        time_step   state_id      distribution  count
-            2019-01-01  0           state_i       0.4           88
-            2019-01-01  0           state_j       0.4           88
-            2019-01-01  0           state_k       0.2           44
+            cohort      date        time_step   state_id      distribution  count
+            2019-01-01  2019-01-01  0           state_i       0.4           88
+            2019-01-01  2019-01-01  0           state_j       0.4           88
+            2019-01-01  2019-01-01  0           state_k       0.2           44
             .
             .
             .
         """
-        ret = {date_column: [], time_step_column: [], state_id_column: [], distribution_column: [], count_column: []}
+        ret = {
+            cohort_column: [],
+            date_column: [],
+            time_step_column: [],
+            state_id_column: [],
+            distribution_column: [],
+            count_column: [],
+        }
         for index, vector in enumerate(self.history):
             for state_id, distribution in vector.state_distribution_dict.items():
+                ret[cohort_column].append(self.cohort)  # add the cohort to the list
                 ret[date_column].append(vector.current_date)  # add the date to the list
                 ret[time_step_column].append(vector.time_step)  # add the time step to the list
                 ret[state_id_column].append(state_id)  # add the state_id to the list
@@ -232,6 +241,7 @@ class MarkovChain:
     # TODO: dataframe of transition probability and counts for state pairs (state_i, state_j) by current date
     def state_transition_history(
             self,
+            cohort_column='cohort',
             date_column='date',
             time_step_column='time_step',
             old_state_id_column='old_state_id',
@@ -242,15 +252,16 @@ class MarkovChain:
         """dataframe of transition probability between state_id tuples
 
         output looks like:
-            date        time_step   old_state_id    new_state_id      transition_probability  transition_count
-            2019-01-01  0           state_i         state_i           0.4                     88
-            2019-01-01  0           state_i         state_j           0.4                     88
-            2019-01-01  0           state_i         state_k           0.2                     44
+            cohort      date        time_step   old_state_id    new_state_id    transition_probability  transition_count
+            2019-01-01  2019-01-01  0           state_i         state_i         0.4                     88
+            2019-01-01  2019-01-01  0           state_i         state_j         0.4                     88
+            2019-01-01  2019-01-01  0           state_i         state_k         0.2                     44
             .
             .
             .
         """
         ret = {
+            cohort_column: [],
             date_column: [],
             time_step_column: [],
             old_state_id_column: [],
@@ -265,6 +276,7 @@ class MarkovChain:
 
             for i, row in enumerate(mat):
                 for j, value in enumerate(row):
+                    ret[cohort_column].append(self.cohort)  # add the cohort to the list
                     ret[date_column].append(vector.current_date)  # add the date to the list
                     ret[time_step_column].append(vector.time_step)  # add the time step to the list
                     ret[old_state_id_column].append(state_id_list[i])  # add the state_id to the list
