@@ -1,3 +1,4 @@
+import pandas as pd
 from markov_model.MarkovChain import MarkovChain
 
 
@@ -104,4 +105,12 @@ class MarkovModel:
             ) for cohort in self.unique_cohorts
         }
 
+    def state_distribution_history(self):
+        """return a dataframe that's a concatenation of all the chain's state distribution histories"""
+        chain_distribution_history_list = [chain.state_distribution_history() for chain in self.markov_chains.values()]
+        return pd.concat(chain_distribution_history_list)
 
+    def state_transition_history(self):
+        """return a dataframe that's a concatenation of all the chain's state transition histories"""
+        chain_transition_history_list = [chain.state_transition_history() for chain in self.markov_chains.values()]
+        return pd.concat(chain_transition_history_list)

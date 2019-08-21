@@ -154,27 +154,5 @@ transitions_df_test = pd.DataFrame.from_dict(transitions_dict)
 
 mm = MarkovModel(initial_state_df=state_df_test, transitions_df=transitions_df_test, total_steps=total_steps_test, time_step_interval='day')
 
-for cohort, chain in mm.markov_chains.items():
-    # mat = chain.markov_transition_matrix.matrix_at_time_step(3)
-    # print(mat)
-    # print(chain.markov_transition_matrix.state_id_tuple_value_at_time_step(matrix_at_time_step=mat, state_id_tuple=('clear', 'windy')))
-    # print(chain.matrix_history)
-    print(chain.state_distribution_history())
-    print(chain.state_transition_history())
-    # print(chain.history)
-    # for vector in chain.history:
-    #     print(vector.time_step, vector.state_distribution, vector.current_date)
-    # print(chain.markov_transition_matrix.matrix_at_time_step(3))
-    # print(sum(chain.current_state.state_distribution))
-
-end = time.time()
-print(end - start)
-
-
-
-
-"""
-          (a, d, g)
-          (b, e, h)
-(x, y, z) (c, f, i)
-"""
+# print(mm.state_distribution_history())
+print(mm.state_transition_history())
