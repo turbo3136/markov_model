@@ -68,7 +68,7 @@ class MarkovTransitionFunction:
         Returns:
             popt -- optimal parameters found for the transition function, `f(xdata, *popt) - ydata` is minimized
         """
-        if not self.allow_fit:  # if we don't want to fit this function, return None
+        if self.allow_fit != 1:  # if we don't want to fit this function, return None
             return
 
         if not self.args_bounds:  # if we didn't provide bounds, use negative and positive infinity
@@ -80,19 +80,24 @@ class MarkovTransitionFunction:
         if self.ydata_sigma is not None:
             absolute_sigma = False
 
-        popt, pcov = curve_fit(
-            self.transition_function,
-            xdata=self.xdata,
-            ydata=self.ydata,
-            p0=self.args_initial_guess,
-            sigma=self.ydata_sigma,
-            absolute_sigma=absolute_sigma,
-            bounds=bounds,
-        )
-        if update_args:
-            self.args = popt
+        # TODO: figure out a better solution here
+        try:
+            popt, pcov = curve_fit(
+                self.transition_function,
+                xdata=self.xdata,
+                ydata=self.ydata,
+                p0=self.args_initial_guess,
+                sigma=self.ydata_sigma,
+                absolute_sigma=absolute_sigma,
+                bounds=bounds,
+            )
+            if update_args:
+                self.args = popt
 
-        return popt
+            return popt
+        except ValueError:
+            print('Fitting failed for cohort {}, tuple {}'.format(self.cohort, self.state_id_tuple))
+            return
 
     def plot_actual_vs_args(self, file_path=None):
         # TODO: check that this data is a numpy array

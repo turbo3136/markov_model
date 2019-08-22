@@ -29,10 +29,10 @@ class MarkovModel:
             ydata_sigma_column='transition_sigma',
             args_initial_guess_column='args_initial_guess',
             args_bounds_column='args_bounds',
-            allow_fit_column=True,
+            allow_fit_column='allow_fit',
 
             self_is_remainder=True,
-            markov_transition_function_column='markov_transition_function_column',
+            markov_transition_function_column='markov_transition_function',
             time_step_interval='month',
     ):
         self.initial_state_df = initial_state_df

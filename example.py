@@ -129,15 +129,15 @@ transitions_dict = {
         ([0], [1]),
     ],
     'allow_fit': [
+        0,
         1,
         1,
         1,
+        0,
         1,
         1,
         1,
-        1,
-        1,
-        1,
+        0,
     ]
 }
 
@@ -156,3 +156,6 @@ mm = MarkovModel(initial_state_df=state_df_test, transitions_df=transitions_df_t
 
 # print(mm.state_distribution_history())
 print(mm.state_transition_history())
+
+end = time.time()
+print(end - start)
