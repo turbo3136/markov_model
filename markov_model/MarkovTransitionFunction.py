@@ -78,7 +78,7 @@ class MarkovTransitionFunction:
 
         absolute_sigma = None
         if self.ydata_sigma is not None:
-            absolute_sigma = False
+            absolute_sigma = True
 
         # TODO: figure out a better solution here
         try:
