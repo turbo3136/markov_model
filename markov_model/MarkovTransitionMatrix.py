@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 from markov_model.MarkovTransitionFunction import MarkovTransitionFunction
 
@@ -110,6 +111,7 @@ class MarkovTransitionMatrix:
 
         remainder_check = False  # create a check to see if any of the functions are supposed to be the remainder
 
+        # loop through the matrix and add values
         for row_index, row in enumerate(self.transition_function_matrix):
             for tf_index, tf in enumerate(row):
                 if tf.is_remainder:
@@ -117,6 +119,13 @@ class MarkovTransitionMatrix:
                     ret[row_index][tf_index] = 0
                 else:
                     ret[row_index][tf_index] = tf.value_at_time_step(time_step)
+                    if ret[row_index][tf_index] > 1 or ret[row_index][tf_index] < 0:
+                        warnings.warn(
+                            'value not between 0 and 1. state_id_tuple = {}, time_step={}'.format(
+                                self.state_id_tuple_matrix[row_index][tf_index], time_step
+                            ),
+                            Warning,
+                        )
 
         # TODO: this is not an elegant solution
         if remainder_check:  # if we want to set (state_i, state_i) transitions to the remainder, do it
@@ -124,6 +133,13 @@ class MarkovTransitionMatrix:
                 for tf_index, tf in enumerate(row):
                     if tf.is_remainder:
                         ret[row_index][tf_index] = 1 - sum(ret[row_index])
+                        if ret[row_index][tf_index] > 1 or ret[row_index][tf_index] < 0:
+                            warnings.warn(
+                                'value not between 0 and 1. state_id_tuple = {}, time_step={}'.format(
+                                    self.state_id_tuple_matrix[row_index][tf_index], time_step
+                                ),
+                                Warning,
+                            )
 
         return ret
 
