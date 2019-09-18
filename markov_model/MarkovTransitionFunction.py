@@ -99,7 +99,7 @@ class MarkovTransitionFunction:
             print('Fitting failed for cohort {}, tuple {}'.format(self.cohort, self.state_id_tuple))
             return
 
-    def plot_actual_vs_args(self, file_path=None):
+    def plot_actual_vs_args(self, file_path=None, auto_open=False):
         # TODO: check that this data is a numpy array
         x = self.xdata
         y = self.ydata
@@ -109,10 +109,10 @@ class MarkovTransitionFunction:
             plot([
                 go.Scatter(x=x, y=y, name='actual'),
                 go.Scatter(x=x, y=y_fit, name='fit'),
-            ], filename=file_path)
+            ], filename=file_path, auto_open=auto_open)
         else:
             plot([
                 go.Scatter(x=x, y=y, name='actual'),
                 go.Scatter(x=x, y=y_fit, name='fit'),
-            ])
+            ], auto_open=auto_open)
         return
