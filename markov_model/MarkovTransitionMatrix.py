@@ -135,8 +135,8 @@ class MarkovTransitionMatrix:
                         ret[row_index][tf_index] = 1 - sum(ret[row_index])
                         if ret[row_index][tf_index] > 1 or ret[row_index][tf_index] < 0:
                             warnings.warn(
-                                'value not between 0 and 1. state_id_tuple = {}, time_step={}'.format(
-                                    self.state_id_tuple_matrix[row_index][tf_index], time_step
+                                'value not between 0 and 1: value={}, state_id_tuple={}, time_step={}'.format(
+                                    ret[row_index][tf_index], self.state_id_tuple_matrix[row_index][tf_index], time_step
                                 ),
                                 Warning,
                             )
