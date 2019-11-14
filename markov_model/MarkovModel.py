@@ -1,5 +1,8 @@
+import numpy as np
 import pandas as pd
 from markov_model.MarkovChain import MarkovChain
+from markov_model.MarkovTransitionFunction import MarkovTransitionFunction
+from markov_model.MarkovTransitionMatrix import MarkovTransitionMatrix
 
 
 class MarkovModel:
@@ -18,7 +21,7 @@ class MarkovModel:
             initial_state_count_column='count',
             initial_state_time_step_column='time_step',
 
-            fit_data=True,
+            fit_data=False,
             cohort_column='cohort',
             old_state_id_column='old_state_id',
             new_state_id_column='new_state_id',
@@ -30,8 +33,8 @@ class MarkovModel:
             args_initial_guess_column='args_initial_guess',
             args_bounds_column='args_bounds',
             allow_fit_column='allow_fit',
+            is_remainder_column='is_remainder',
 
-            self_is_remainder=True,
             markov_transition_function_column='markov_transition_function',
             time_step_interval='month',
     ):
@@ -56,8 +59,8 @@ class MarkovModel:
         self.args_initial_guess_column = args_initial_guess_column
         self.args_bounds_column = args_bounds_column
         self.allow_fit_column = allow_fit_column
+        self.is_remainder_column = is_remainder_column
 
-        self.self_is_remainder = self_is_remainder
         self.markov_transition_function_column = markov_transition_function_column
         self.time_step_interval = time_step_interval
 
@@ -65,6 +68,11 @@ class MarkovModel:
         self.unique_cohorts = self.initial_state_df[self.cohort_column].unique()
         if set(self.unique_cohorts) != set(self.transitions_df[self.cohort_column].unique()):
             raise ValueError('unique cohorts are different in initial_state_df and transition_df')
+
+        # next, we create the MarkovTransitionFunction column in the transitions df
+        self.transitions_df[self.markov_transition_function_column] = self.transitions_df.apply(
+            self.create_markov_transition_function_column, axis=1
+        )
 
         # then we create the markov chains for each cohort
         self.markov_chains = self.create_markov_chains()
@@ -99,7 +107,6 @@ class MarkovModel:
                 args_bounds_column=self.args_bounds_column,
                 allow_fit_column=self.allow_fit_column,
 
-                self_is_remainder=self.self_is_remainder,
                 markov_transition_function_column=self.markov_transition_function_column,
                 time_step_interval=self.time_step_interval,
             ) for cohort in self.unique_cohorts
@@ -114,3 +121,30 @@ class MarkovModel:
         """return a dataframe that's a concatenation of all the chain's state transition histories"""
         chain_transition_history_list = [chain.state_transition_history() for chain in self.markov_chains.values()]
         return pd.concat(chain_transition_history_list)
+
+    def create_markov_transition_function_column(self, row):
+        """take a row of a dataframe and return a MarkovTransitionFunction object"""
+        ydata = row[self.ydata_column]  # first grab the ydata array
+        if self.xdata_column is None:  # if we didn't provide xdata info, then create an array of length ydata
+            xdata = np.arange(len(ydata))
+        else:  # otherwise, grab the column provided
+            xdata = row[self.xdata_column]
+
+        ret = MarkovTransitionFunction(
+            state_id_tuple=(row[self.old_state_id_column], row[self.new_state_id_column]),
+            transition_function=row[self.transition_function_column],
+            cohort=row[self.cohort_column],
+            args=row[self.args_column],
+            xdata=xdata,
+            ydata=ydata,
+            ydata_sigma=row[self.ydata_sigma_column],
+            args_initial_guess=row[self.args_initial_guess_column],
+            args_bounds=row[self.args_bounds_column],
+            allow_fit=row[self.allow_fit_column],
+            is_remainder=row[self.is_remainder_column],
+        )
+
+        if self.fit_data:
+            ret.fit_to_data()
+
+        return ret
