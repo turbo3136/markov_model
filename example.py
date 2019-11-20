@@ -155,7 +155,8 @@ transitions_df_test = pd.DataFrame.from_dict(transitions_dict)
 mm = MarkovModel(initial_state_df=state_df_test, transitions_df=transitions_df_test, total_steps=total_steps_test, time_step_interval='day')
 
 # print(mm.state_distribution_history())
-print(mm.state_transition_history())
+# print(mm.state_transition_history())
+print(mm.transition_matrix_df)
 
 end = time.time()
 print(end - start)

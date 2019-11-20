@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import helpers
 from markov_model.MarkovStateSpace import MarkovStateSpace
 from markov_model.MarkovStateVector import MarkovStateVector
 from markov_model.MarkovTransitionMatrix import MarkovTransitionMatrix
@@ -37,7 +38,7 @@ class MarkovChain:
             initial_state_count_column='count',
             initial_state_time_step_column='time_step',
 
-            fit_data=True,
+            fit_data=False,
             cohort_column='cohort',
             old_state_id_column='old_state_id',
             new_state_id_column='new_state_id',
@@ -50,9 +51,9 @@ class MarkovChain:
             args_bounds_column='args_bounds',
             allow_fit_column='allow_fit',
 
-            self_is_remainder=True,
             markov_transition_function_column='markov_transition_function_column',
             time_step_interval='month',
+            date_column='date'
     ):
         self.cohort = cohort
         self.initial_state_df = initial_state_df
@@ -77,9 +78,9 @@ class MarkovChain:
         self.args_bounds_column = args_bounds_column
         self.allow_fit_column = allow_fit_column
 
-        self.self_is_remainder = self_is_remainder
         self.markov_transition_function_column = markov_transition_function_column
         self.time_step_interval = time_step_interval
+        self.date_column = date_column
 
         # check to see if we have more than one cohort, if so raise an error
         if len(self.initial_state_df[self.cohort_column].unique()) != 1 or \
@@ -98,66 +99,85 @@ class MarkovChain:
         # now we create the MarkovStateSpace object
         self.markov_state_space = MarkovStateSpace(state_id_list=self.state_id_list)
 
-        # now let's create the initial_state_dict
-        self.initial_state_dict = self.initial_state_df[
-            [self.initial_state_column, self.initial_state_distribution_column, self.initial_state_time_step_column]
-        ].to_dict(orient='list')
-        # let's check to make sure the distribution is in the same order as we expect from MarkovStateSpace
-        if not all(self.state_id_list == self.initial_state_dict[self.initial_state_column]):
-            raise ValueError('looks like the state distribution got out of order, fuck')
+        # then we create the transition matrix df by cohort (index = (cohort, old_state_id), columns = new_state_id)
+        self.transition_matrix_df = pd.pivot_table(
+            self.transitions_df,
+            values=self.markov_transition_function_column,
+            index=[self.cohort_column, self.old_state_id_column],
+            columns=[self.new_state_id_column],
+            aggfunc=lambda x: x,  # we don't actually want to aggregate anything, we're just exploiting the pivot table
+        )
 
-        # now we create the initial state distribution and add it to the history log
-        self.initial_state_distribution = np.array(self.initial_state_dict[self.initial_state_distribution_column])
+        # then we create the MarkovTransitionMatrix
+        self.markov_transition_matrix = MarkovTransitionMatrix(transition_matrix_df=self.transition_matrix_df)
 
-        # now let's grab the initial time_step
-        if len(set(self.initial_state_dict[self.initial_state_time_step_column])) != 1:
-            raise ValueError(
-                'the initial time step has multiple values for the same cohort, cohort='.format(self.cohort)
-            )
-        self.initial_state_time_step = self.initial_state_dict[self.initial_state_time_step_column][0]
-
-        # now let's sum up the initial state count column to figure out the total size of the vector
+        # now we figure out the size of the initial state (i.e. the total number of things in all the states)
         self.cohort_size = self.initial_state_df[self.initial_state_count_column].sum()
 
-        # now let's create the MarkovStateVector object
+        # now we grab the time step
+        self.time_step_set = set(self.initial_state_df[self.initial_state_time_step_column].values)
+        if len(self.time_step_set) != 1:
+            raise ValueError(
+                'the initial time step has multiple values for the same cohort, cohort={}'.format(self.cohort)
+            )
+        self.initial_state_time_step = self.time_step_set.pop()
+
+        # and the initial date
+        self.initial_state_date = helpers.add_interval_to_date(
+            date_object=helpers.date_string_to_datetime(self.cohort),
+            steps=self.initial_state_time_step,
+            interval=self.time_step_interval,
+        )
+
+        # and then we create the state_distribution_df (index=(cohort, state_id), column=distribution)
+        self.state_distribution_df = self.initial_state_df.rename(
+            columns={self.initial_state_column: self.old_state_id_column}  # rename the state_id column to old_state_id
+        )
+
+        self.state_distribution_df[self.date_column] = self.initial_state_date
+
+        self.state_distribution_df = self.state_distribution_df.set_index(
+            # set the index to cohort, date, time_step, old_state_id
+            [self.cohort_column, self.date_column, self.initial_state_time_step_column, self.old_state_id_column]
+        )[[self.initial_state_distribution_column, self.initial_state_count_column]]
+
+        # grab the matrix at the initial time step
+        self.initial_markov_transition_matrix = self.markov_transition_matrix.matrix_at_time_step(
+            self.initial_state_time_step
+        )
+
+        # and create the state_transition_df for the initial time_step
+        self.state_transition_df = helpers.join_vector_to_df_on_index_and_multiply_across_rows(
+            self.state_distribution_df, self.initial_markov_transition_matrix, self.initial_state_distribution_column
+        )
+
+        # finally, let's create the MarkovStateVector object
         self.markov_state_vector = MarkovStateVector(
             cohort=self.cohort,
             state_space=self.markov_state_space,
-            state_distribution=self.initial_state_distribution,
-            time_step=self.initial_state_time_step,
-            time_step_interval=self.time_step_interval,
-            size=self.cohort_size,
-        )
-        self.history = np.array([self.markov_state_vector])  # initialize the history with the initial state
-
-        # now we create the MarkovTransitionMatrix object
-        self.markov_transition_matrix = MarkovTransitionMatrix(
-            cohort=self.cohort,
-            state_space=self.markov_state_space,
-            transitions_df=self.transitions_df,
-
-            fit_data=self.fit_data,
+            state_distribution_df=self.state_distribution_df,
             cohort_column=self.cohort_column,
             old_state_id_column=self.old_state_id_column,
-            new_state_id_column=self.new_state_id_column,
-            transition_function_column=self.transition_function_column,
-            args_column=self.args_column,
-            xdata_column=self.xdata_column,
-            ydata_column=self.ydata_column,
-            ydata_sigma_column=self.ydata_sigma_column,
-            args_initial_guess_column=self.args_initial_guess_column,
-            args_bounds_column=self.args_bounds_column,
-            allow_fit_column=self.allow_fit_column,
-            self_is_remainder=self.self_is_remainder,
-            markov_transition_function_column=self.markov_transition_function_column,
+            time_step_column=self.initial_state_time_step_column,
+            date_column=self.date_column,
+            distribution_column=self.initial_state_distribution_column,
+            count_column=self.initial_state_count_column,
+            markov_transition_matrix_df=self.initial_markov_transition_matrix,
+            state_transition_df=self.state_transition_df,
+            cohort_size=self.cohort_size,
+            time_step=self.initial_state_time_step,
+            time_step_interval=self.time_step_interval
         )
+
+        self.history = [self.markov_state_vector]  # initialize the history with the initial state
 
         # then we have everything we need to calculate the current state and log the history along the way
         self.current_state = self.state_after_n_steps(
             self.markov_state_vector, self.total_steps, log_history=True
         )
 
-        # self.state_distribution_history()
+        self.state_distribution_history_df = self.state_distribution_history()
+        self.state_transition_history_df = self.state_transition_history()
 
     def __repr__(self):
         return 'MarkovChain(current_state={}, state_space={})'.format(
@@ -166,15 +186,30 @@ class MarkovChain:
 
     def next_state(self, starting_state, log_history=False):
         """return a MarkovStateVector object after applying the transition matrix"""
-        mat = self.markov_transition_matrix.matrix_at_time_step(starting_state.time_step)
+        next_state_distribution_df = starting_state.next_state_distribution_df
+
+        next_markov_transition_matrix_df = self.markov_transition_matrix.matrix_at_time_step(
+            starting_state.time_step + 1
+        )
+        next_state_transition_df = helpers.join_vector_to_df_on_index_and_multiply_across_rows(
+            next_state_distribution_df, next_markov_transition_matrix_df, starting_state.distribution_column
+        )
 
         next_state = MarkovStateVector(
             cohort=starting_state.cohort,
             state_space=starting_state.state_space,
-            state_distribution=starting_state.state_distribution.dot(mat),  # increment the state_distribution
+            state_distribution_df=next_state_distribution_df,
+            cohort_column=starting_state.cohort_column,
+            old_state_id_column=starting_state.old_state_id_column,
+            time_step_column=starting_state.time_step_column,
+            date_column=starting_state.date_column,
+            distribution_column=starting_state.distribution_column,
+            count_column=starting_state.count_column,
+            markov_transition_matrix_df=next_markov_transition_matrix_df,
+            state_transition_df=next_state_transition_df,
+            cohort_size=starting_state.cohort_size,
             time_step=starting_state.time_step + 1,  # increment the time_step
             time_step_interval=starting_state.time_step_interval,
-            size=starting_state.size,
         )
 
         # check to see if we want to log the history
@@ -188,10 +223,18 @@ class MarkovChain:
         current_state = MarkovStateVector(
             cohort=starting_state.cohort,
             state_space=starting_state.state_space,
-            state_distribution=starting_state.state_distribution,
+            state_distribution_df=starting_state.state_distribution_df,
+            cohort_column=starting_state.cohort_column,
+            old_state_id_column=starting_state.old_state_id_column,
+            time_step_column=starting_state.time_step_column,
+            date_column=starting_state.date_column,
+            distribution_column=starting_state.distribution_column,
+            count_column=starting_state.count_column,
+            markov_transition_matrix_df=starting_state.markov_transition_matrix_df,
+            state_transition_df=starting_state.state_transition_df,
+            cohort_size=starting_state.cohort_size,
             time_step=starting_state.time_step,
             time_step_interval=starting_state.time_step_interval,
-            size=starting_state.size
         )
 
         for step in np.arange(n):
@@ -199,15 +242,7 @@ class MarkovChain:
 
         return current_state
 
-    def state_distribution_history(
-            self,
-            cohort_column='cohort',
-            date_column='date',
-            time_step_column='time_step',
-            state_id_column='state_id',
-            distribution_column='distribution',
-            count_column='count',
-    ):
+    def state_distribution_history(self):
         """dataframe of state distribution with current date, time_step, and state_ids as the columns
 
         output looks like:
@@ -219,33 +254,12 @@ class MarkovChain:
             .
             .
         """
-        ret = {
-            cohort_column: [],
-            date_column: [],
-            time_step_column: [],
-            state_id_column: [],
-            distribution_column: [],
-            count_column: [],
-        }
-        for index, vector in enumerate(self.history):
-            for state_id, distribution in vector.state_distribution_dict.items():
-                ret[cohort_column].append(self.cohort)  # add the cohort to the list
-                ret[date_column].append(vector.current_date)  # add the date to the list
-                ret[time_step_column].append(vector.time_step)  # add the time step to the list
-                ret[state_id_column].append(state_id)  # add the state_id to the list
-                ret[distribution_column].append(distribution)  # add the distribution in this state to the list
-                ret[count_column].append(vector.size * distribution)  # add the count of items in this state
-
-        return pd.DataFrame.from_dict(ret)
+        state_distribution_df_list = [v.state_distribution_df for v in self.history]
+        return pd.concat(state_distribution_df_list)
 
     # TODO: dataframe of transition probability and counts for state pairs (state_i, state_j) by current date
     def state_transition_history(
             self,
-            cohort_column='cohort',
-            date_column='date',
-            time_step_column='time_step',
-            old_state_id_column='old_state_id',
-            new_state_id_column='new_state_id',
             transition_probability_column='transition_probability',
             transition_count_column='transition_count',
     ):
@@ -260,29 +274,41 @@ class MarkovChain:
             .
             .
         """
-        ret = {
-            cohort_column: [],
-            date_column: [],
-            time_step_column: [],
-            old_state_id_column: [],
-            new_state_id_column: [],
-            transition_probability_column: [],
-            transition_count_column: [],
-        }
-        for index, vector in enumerate(self.history):
-            # TODO: log the matrix history ahead of time so we don't have to calculate this again
-            mat = self.markov_transition_matrix.matrix_at_time_step(time_step=vector.time_step)
-            state_id_list = vector.state_space.state_id_list  # list of state_ids
+        state_transition_df_list = [
+            self.melt_state_transition_df_and_transition_matrix_and_join(
+                v, transition_probability_column, transition_count_column
+            )
+            for v in self.history
+        ]
+        return pd.concat(state_transition_df_list)
 
-            for i, row in enumerate(mat):
-                for j, value in enumerate(row):
-                    ret[cohort_column].append(self.cohort)  # add the cohort to the list
-                    ret[date_column].append(vector.current_date)  # add the date to the list
-                    ret[time_step_column].append(vector.time_step)  # add the time step to the list
-                    ret[old_state_id_column].append(state_id_list[i])  # add the state_id to the list
-                    ret[new_state_id_column].append(state_id_list[j])  # add the state_id to the list
-                    ret[transition_probability_column].append(mat[i][j])  # add the transition_probability
-                    # and finally the count of transitions between the old and new state
-                    ret[transition_count_column].append(vector.state_distribution[i] * vector.size * mat[i][j])
+    def melt_state_transition_df_and_transition_matrix_and_join(
+            self,
+            markov_state,
+            transition_probability_column,
+            transition_count_column,
+    ):
+        ret = markov_state.state_transition_df * markov_state.cohort_size
+        ret = ret.reset_index().melt(
+            id_vars=[
+                self.cohort_column, self.initial_state_time_step_column, self.date_column, self.old_state_id_column
+            ],
+            var_name=self.new_state_id_column,
+            value_name=transition_count_column,
+        )
 
-        return pd.DataFrame.from_dict(ret)
+        tm = markov_state.markov_transition_matrix_df.reset_index().melt(
+            id_vars=[self.cohort_column, self.old_state_id_column],
+            var_name=self.new_state_id_column,
+            value_name=transition_probability_column
+        )
+
+        ret = ret.merge(tm, on=[self.cohort_column, self.old_state_id_column, self.new_state_id_column])
+
+        return ret.set_index([
+            self.cohort_column,
+            self.date_column,
+            self.initial_state_time_step_column,
+            self.old_state_id_column,
+            self.new_state_id_column,
+        ])[[transition_probability_column, transition_count_column]]

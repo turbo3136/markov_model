@@ -55,10 +55,18 @@ class MarkovTransitionFunction:
 
     def value_at_time_step(self, time_step):
         """return the value of transition function at time_step using args if provided"""
-        if self.args is not None:
-            return self.transition_function(time_step, *self.args)
+        if self.is_remainder:
+            return 0
 
-        return self.transition_function(time_step)
+        if self.args is not None:
+            ret = self.transition_function(time_step, *self.args)
+        else:
+            ret = self.transition_function(time_step)
+
+        if ret < 0 or ret > 1:
+            raise ValueError('transition function value ({}) at time step {} is out of bounds'.format(ret, time_step))
+
+        return ret
 
     def fit_to_data(self, update_args=True):
         """fit transition function to data and optionally update the args based on the output
