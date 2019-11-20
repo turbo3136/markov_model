@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 from markov_model.MarkovChain import MarkovChain
 from markov_model.MarkovTransitionFunction import MarkovTransitionFunction
-from markov_model.MarkovTransitionMatrix import MarkovTransitionMatrix
 
 
 class MarkovModel:
@@ -77,6 +76,10 @@ class MarkovModel:
         # then we create the markov chains for each cohort
         self.markov_chains = self.create_markov_chains()
 
+        # finally, we grab the total histories
+        self.state_distribution_history_df = self.state_distribution_history()
+        self.state_transition_history_df = self.state_transition_history()
+
     def create_markov_chains(self):
         """for each cohort, return a MarkovChain object
 
@@ -114,12 +117,12 @@ class MarkovModel:
 
     def state_distribution_history(self):
         """return a dataframe that's a concatenation of all the chain's state distribution histories"""
-        chain_distribution_history_list = [chain.state_distribution_history() for chain in self.markov_chains.values()]
+        chain_distribution_history_list = [chain.state_distribution_history_df for chain in self.markov_chains.values()]
         return pd.concat(chain_distribution_history_list)
 
     def state_transition_history(self):
         """return a dataframe that's a concatenation of all the chain's state transition histories"""
-        chain_transition_history_list = [chain.state_transition_history() for chain in self.markov_chains.values()]
+        chain_transition_history_list = [chain.state_transition_history_df for chain in self.markov_chains.values()]
         return pd.concat(chain_transition_history_list)
 
     def create_markov_transition_function_column(self, row):

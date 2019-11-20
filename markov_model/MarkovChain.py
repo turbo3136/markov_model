@@ -176,7 +176,8 @@ class MarkovChain:
             self.markov_state_vector, self.total_steps, log_history=True
         )
 
-        self.state_distribution_history()
+        self.state_distribution_history_df = self.state_distribution_history()
+        self.state_transition_history_df = self.state_transition_history()
 
     def __repr__(self):
         return 'MarkovChain(current_state={}, state_space={})'.format(
